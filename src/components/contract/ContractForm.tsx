@@ -26,7 +26,7 @@ const ContractForm = () => {
     client_id: '',
     total_value: '',
     due_date: '',
-    status: 'draft'
+    status: 'draft' as const
   });
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const ContractForm = () => {
         client_id: formData.client_id,
         total_value: formData.total_value ? parseFloat(formData.total_value) : null,
         due_date: formData.due_date || null,
-        status: action === 'send' ? 'sent' : 'draft',
+        status: action === 'send' ? 'sent' as const : 'draft' as const,
         sent_at: action === 'send' ? new Date().toISOString() : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -115,7 +115,7 @@ const ContractForm = () => {
     }
   };
 
-  const isFormValid = formData.title && formData.content && formData.client_id;
+  const isFormValid = Boolean(formData.title && formData.content && formData.client_id);
 
   return (
     <form onSubmit={(e) => handleSubmit(e, 'save')} className="space-y-6">
