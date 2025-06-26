@@ -38,12 +38,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .from('user_profiles')
                 .select('id')
                 .eq('user_id', session.user.id)
-                .single();
+                .maybeSingle();
 
               if (!profile) {
                 await supabase
                   .from('user_profiles')
                   .insert({
+                    id: crypto.randomUUID(),
                     user_id: session.user.id,
                     name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Usuário',
                     email: session.user.email || '',
