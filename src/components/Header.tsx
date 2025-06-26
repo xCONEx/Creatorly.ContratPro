@@ -69,6 +69,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
+          id: crypto.randomUUID(),
           user_id: user.id,
           name: profile.name,
           email: profile.email,

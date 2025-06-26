@@ -307,7 +307,7 @@ const NewContract = () => {
               <CardContent className="space-y-3 text-sm text-slate-600">
                 <div>
                   <p className="font-medium">📝 Use variáveis</p>
-                  <p>{{nome_cliente}}, {{data_atual}}, {{valor_total}}</p>
+                  <p>Nome do cliente, data atual, valor total</p>
                 </div>
                 <div>
                   <p className="font-medium">📋 Templates</p>
