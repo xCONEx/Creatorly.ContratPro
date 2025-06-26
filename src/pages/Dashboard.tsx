@@ -1,321 +1,288 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { 
-  FileText, 
-  Users, 
-  Clock, 
-  CheckCircle, 
-  Plus, 
-  Search, 
-  Bell, 
-  Settings, 
-  LogOut,
-  BarChart3,
-  TrendingUp
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { FileText, Users, DollarSign, Clock, Plus, TrendingUp, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
-interface User {
-  email: string;
-  name: string;
-  avatar: string;
-  plan: string;
-  joinDate: string;
+interface DashboardStats {
+  totalContracts: number;
+  activeContracts: number;
+  totalClients: number;
+  monthlyRevenue: number;
+}
+
+interface RecentContract {
+  id: string;
+  title: string;
+  status: string;
+  client_name?: string;
+  created_at: string;
+  total_value?: number;
 }
 
 const Dashboard = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalContracts: 0,
+    activeContracts: 0,
+    totalClients: 0,
+    monthlyRevenue: 0
+  });
+  const [recentContracts, setRecentContracts] = useState<RecentContract[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      navigate('/login');
-      return;
+    if (user) {
+      fetchDashboardData();
     }
-    setUser(JSON.parse(userData));
-  }, [navigate]);
+  }, [user]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    toast({
-      title: "Logout realizado",
-      description: "Até mais!",
-    });
-    navigate('/login');
+  const fetchDashboardData = async () => {
+    if (!user) return;
+
+    try {
+      // Buscar estatísticas dos contratos
+      const { data: contracts, error: contractsError } = await supabase
+        .from('contracts')
+        .select('id, status, total_value, created_at')
+        .eq('user_id', user.id);
+
+      if (contractsError) throw contractsError;
+
+      // Buscar clientes
+      const { data: clients, error: clientsError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id);
+
+      if (clientsError) throw clientsError;
+
+      // Buscar contratos recentes com nome do cliente
+      const { data: recentContractsData, error: recentError } = await supabase
+        .from('contracts')
+        .select(`
+          id,
+          title,
+          status,
+          created_at,
+          total_value,
+          clients:client_id (
+            name
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (recentError) throw recentError;
+
+      // Calcular estatísticas
+      const totalContracts = contracts?.length || 0;
+      const activeContracts = contracts?.filter(c => c.status === 'active' || c.status === 'sent').length || 0;
+      const totalClients = clients?.length || 0;
+
+      // Calcular receita do mês atual
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const monthlyRevenue = contracts
+        ?.filter(c => {
+          const contractDate = new Date(c.created_at);
+          return contractDate.getMonth() === currentMonth && 
+                 contractDate.getFullYear() === currentYear &&
+                 c.status === 'signed';
+        })
+        .reduce((sum, c) => sum + (Number(c.total_value) || 0), 0) || 0;
+
+      setStats({
+        totalContracts,
+        activeContracts,
+        totalClients,
+        monthlyRevenue
+      });
+
+      // Processar contratos recentes
+      const processedRecentContracts = recentContractsData?.map(contract => ({
+        id: contract.id,
+        title: contract.title,
+        status: contract.status,
+        client_name: (contract.clients as any)?.name || 'Cliente não encontrado',
+        created_at: contract.created_at,
+        total_value: contract.total_value
+      })) || [];
+
+      setRecentContracts(processedRecentContracts);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (!user) return null;
-
-  const stats = [
-    {
-      title: "Contratos Ativos",
-      value: "12",
-      description: "3 pendentes de assinatura",
-      icon: FileText,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100"
-    },
-    {
-      title: "Clientes",
-      value: "28",
-      description: "+4 este mês",
-      icon: Users,
-      color: "text-green-600",
-      bgColor: "bg-green-100"
-    },
-    {
-      title: "Tempo Médio",
-      value: "2.3h",
-      description: "Para assinatura",
-      icon: Clock,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100"
-    },
-    {
-      title: "Taxa de Sucesso",
-      value: "94%",
-      description: "Contratos finalizados",
-      icon: TrendingUp,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100"
-    }
-  ];
-
-  const recentContracts = [
-    {
-      id: 1,
-      title: "Contrato de Prestação de Serviços",
-      client: "Tech Solutions Ltda",
-      status: "pending",
-      date: "2024-12-25",
-      value: "R$ 15.000,00"
-    },
-    {
-      id: 2,
-      title: "Acordo de Confidencialidade",
-      client: "StartupX",
-      status: "signed",
-      date: "2024-12-24",
-      value: "R$ 2.500,00"
-    },
-    {
-      id: 3,
-      title: "Contrato de Desenvolvimento",
-      client: "E-commerce Pro",
-      status: "draft",
-      date: "2024-12-23",
-      value: "R$ 25.000,00"
-    },
-    {
-      id: 4,
-      title: "Termo de Parceria",
-      client: "Marketing Digital+",
-      status: "signed",
-      date: "2024-12-22",
-      value: "R$ 8.750,00"
-    }
-  ];
-
-  const getStatusBadge = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
-      case 'signed':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Assinado</Badge>;
-      case 'draft':
-        return <Badge variant="secondary" className="bg-gray-100 text-gray-800">Rascunho</Badge>;
-      default:
-        return <Badge variant="secondary">Desconhecido</Badge>;
+      case 'signed': return 'text-green-600 bg-green-100';
+      case 'sent': return 'text-blue-600 bg-blue-100';
+      case 'draft': return 'text-slate-600 bg-slate-100';
+      case 'expired': return 'text-red-600 bg-red-100';
+      default: return 'text-slate-600 bg-slate-100';
     }
   };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'signed': return 'Assinado';
+      case 'sent': return 'Enviado';
+      case 'draft': return 'Rascunho';
+      case 'expired': return 'Expirado';
+      default: return status;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="space-y-8">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                ContratPro
-              </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-600">Visão geral dos seus contratos e negócios</p>
+        </div>
+        <Link to="/contracts/new">
+          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Contrato
+          </Button>
+        </Link>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Contratos</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalContracts}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.activeContracts} ativos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Clientes</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalClients}</div>
+            <p className="text-xs text-muted-foreground">
+              clientes cadastrados
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita do Mês</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              R$ {stats.monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <div className="hidden md:block w-px h-6 bg-slate-300" />
-            <p className="hidden md:block text-slate-600">Dashboard</p>
-          </div>
+            <p className="text-xs text-muted-foreground">
+              contratos assinados
+            </p>
+          </CardContent>
+        </Card>
 
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" className="relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
-            </Button>
-            
-            <div className="flex items-center space-x-3">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-8 h-8 rounded-full"
-              />
-              <div className="hidden md:block text-sm">
-                <p className="font-medium text-slate-800">{user.name}</p>
-                <p className="text-slate-500">Plano {user.plan}</p>
-              </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Contratos Ativos</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeContracts}</div>
+            <p className="text-xs text-muted-foreground">
+              aguardando assinatura
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Contracts */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Contratos Recentes</CardTitle>
+              <CardDescription>
+                Últimos contratos criados na sua conta
+              </CardDescription>
             </div>
-
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <Link to="/contracts">
+              <Button variant="outline">
+                <Eye className="w-4 h-4 mr-2" />
+                Ver Todos
+              </Button>
+            </Link>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="p-6">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-slate-800 mb-2">
-            Olá, {user.name.split(' ')[0]} 👋
-          </h2>
-          <p className="text-slate-600">
-            Aqui está um resumo dos seus contratos e atividades.
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-                    <p className="text-xs text-slate-500 mt-1">{stat.description}</p>
-                  </div>
-                  <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Recent Contracts */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-semibold">Contratos Recentes</CardTitle>
-                    <CardDescription>Seus contratos mais recentes</CardDescription>
-                  </div>
-                  <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Contrato
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="space-y-0">
-                  {recentContracts.map((contract, index) => (
-                    <div
-                      key={contract.id}
-                      className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer ${
-                        index !== recentContracts.length - 1 ? 'border-b border-slate-100' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <h4 className="font-medium text-slate-800">{contract.title}</h4>
-                            {getStatusBadge(contract.status)}
-                          </div>
-                          <div className="flex items-center text-sm text-slate-600 space-x-4">
-                            <span>{contract.client}</span>
-                            <span>•</span>
-                            <span>{new Date(contract.date).toLocaleDateString('pt-BR')}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-slate-800">{contract.value}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        </CardHeader>
+        <CardContent>
+          {recentContracts.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h3 className="font-semibold text-slate-600 mb-2">Nenhum contrato ainda</h3>
+              <p className="text-slate-500 mb-4">Crie seu primeiro contrato para começar</p>
+              <Link to="/contracts/new">
+                <Button>
                   <Plus className="w-4 h-4 mr-2" />
-                  Criar Novo Contrato
+                  Criar Primeiro Contrato
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Users className="w-4 h-4 mr-2" />
-                  Gerenciar Clientes
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Templates
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Relatórios
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">Atividade Recente</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 text-sm">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-slate-800">Contrato assinado por Tech Solutions</p>
-                      <p className="text-slate-500">Há 2 horas</p>
-                    </div>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentContracts.map((contract) => (
+                <div key={contract.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900">{contract.title}</h4>
+                    <p className="text-sm text-slate-600">Cliente: {contract.client_name}</p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(contract.created_at).toLocaleDateString('pt-BR')}
+                    </p>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-slate-800">Novo cliente cadastrado</p>
-                      <p className="text-slate-500">Há 5 horas</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-slate-800">Template atualizado</p>
-                      <p className="text-slate-500">Ontem</p>
-                    </div>
+                  <div className="flex items-center space-x-4">
+                    {contract.total_value && (
+                      <div className="text-right">
+                        <p className="font-semibold text-slate-900">
+                          R$ {Number(contract.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    )}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(contract.status)}`}>
+                      {getStatusLabel(contract.status)}
+                    </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </main>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
