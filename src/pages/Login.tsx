@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,14 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, user } = useAuth();
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,14 +67,15 @@ const Login = () => {
           description: error.message,
           variant: "destructive",
         });
+        setIsLoading(false);
       }
+      // Não definir loading como false aqui pois o redirect vai acontecer
     } catch (error) {
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -180,16 +188,6 @@ const Login = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 text-sm text-slate-600">
-                  <input type="checkbox" className="rounded border-slate-300" />
-                  <span>Lembrar-me</span>
-                </label>
-                <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 transition-colors">
-                  Esqueci minha senha
-                </Link>
               </div>
 
               <Button

@@ -21,14 +21,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth event:', event, session);
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Se o usuário fez login, criar perfil se não existir
+        if (event === 'SIGNED_IN' && session?.user) {
+          setTimeout(async () => {
+            try {
+              const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('id')
+                .eq('user_id', session.user.id)
+                .single();
+
+              if (!profile) {
+                await supabase
+                  .from('user_profiles')
+                  .insert({
+                    user_id: session.user.id,
+                    name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Usuário',
+                    email: session.user.email || '',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  });
+              }
+            } catch (error) {
+              console.error('Erro ao criar perfil:', error);
+            }
+          }, 0);
+        }
       }
     );
 
+    // Verificar sessão existente
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);

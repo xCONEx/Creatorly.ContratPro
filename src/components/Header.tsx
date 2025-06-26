@@ -39,7 +39,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         .from('user_profiles')
         .select('name, email')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
@@ -69,7 +69,6 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
-          id: crypto.randomUUID(),
           user_id: user.id,
           name: profile.name,
           email: profile.email,
