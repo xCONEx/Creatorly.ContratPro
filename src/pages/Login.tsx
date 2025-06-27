@@ -15,14 +15,14 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle, user } = useAuth();
+  const { signIn, signInWithGoogle, user, loading } = useAuth();
 
   // Redirecionar se já estiver logado
   useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,25 +32,29 @@ const Login = () => {
       const { error } = await signIn(email, password);
       
       if (error) {
+        console.error('Login error:', error);
         toast({
           title: "Erro no login",
-          description: error.message,
+          description: error.message === 'Invalid login credentials' 
+            ? 'Email ou senha incorretos' 
+            : error.message,
           variant: "destructive",
         });
+        setIsLoading(false);
       } else {
         toast({
           title: "Login realizado com sucesso!",
-          description: "Bem-vindo ao ContratPro",
+          description: "Redirecionando...",
         });
-        navigate('/dashboard');
+        // Não definir loading como false aqui pois o redirect vai acontecer
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -62,6 +66,7 @@ const Login = () => {
       const { error } = await signInWithGoogle();
       
       if (error) {
+        console.error('Google login error:', error);
         toast({
           title: "Erro no login com Google",
           description: error.message,
@@ -71,6 +76,7 @@ const Login = () => {
       }
       // Não definir loading como false aqui pois o redirect vai acontecer
     } catch (error) {
+      console.error('Google login error:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado",
@@ -79,6 +85,15 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+
+  // Mostrar loading enquanto verifica autenticação
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -163,6 +178,7 @@ const Login = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 h-12 border-slate-200 focus:border-blue-500 transition-colors"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -179,11 +195,13 @@ const Login = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10 h-12 border-slate-200 focus:border-blue-500 transition-colors"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>

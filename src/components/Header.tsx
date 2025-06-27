@@ -74,6 +74,8 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           name: profile.name,
           email: profile.email,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) throw error;

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,14 @@ const Register = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, user, loading } = useAuth();
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, loading, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -63,11 +70,21 @@ const Register = () => {
       const { error } = await signUp(formData.email, formData.password);
       
       if (error) {
+        console.error('Register error:', error);
+        let errorMessage = error.message;
+        
+        if (error.message.includes('User already registered')) {
+          errorMessage = 'Este email já está cadastrado. Tente fazer login.';
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = 'A senha deve ter pelo menos 6 caracteres.';
+        }
+        
         toast({
           title: "Erro no registro",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive",
         });
+        setIsLoading(false);
       } else {
         toast({
           title: "Conta criada com sucesso!",
@@ -76,12 +93,12 @@ const Register = () => {
         navigate('/login');
       }
     } catch (error) {
+      console.error('Register error:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -93,22 +110,34 @@ const Register = () => {
       const { error } = await signInWithGoogle();
       
       if (error) {
+        console.error('Google register error:', error);
         toast({
           title: "Erro no registro com Google",
           description: error.message,
           variant: "destructive",
         });
+        setIsLoading(false);
       }
+      // Não definir loading como false aqui pois o redirect vai acontecer
     } catch (error) {
+      console.error('Google register error:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro inesperado",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
+
+  // Mostrar loading enquanto verifica autenticação
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
