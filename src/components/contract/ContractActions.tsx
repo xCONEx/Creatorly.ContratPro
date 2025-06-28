@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Send, Eye, Edit, Download, Trash2 } from 'lucide-react';
+import { Save, Send, Eye, Edit, Download, Trash2, Check, X } from 'lucide-react';
 
 interface ContractActionsProps {
   isLoading: boolean;
@@ -13,7 +13,10 @@ interface ContractActionsProps {
   onEdit?: () => void;
   onDownload?: () => void;
   onDelete?: () => void;
+  onApprove?: () => void;
+  onReject?: () => void;
   showAllActions?: boolean;
+  contractStatus?: string;
 }
 
 const ContractActions = ({ 
@@ -25,7 +28,10 @@ const ContractActions = ({
   onEdit,
   onDownload,
   onDelete,
-  showAllActions = false
+  onApprove,
+  onReject,
+  showAllActions = false,
+  contractStatus
 }: ContractActionsProps) => {
   return (
     <Card>
@@ -41,7 +47,7 @@ const ContractActions = ({
           onClick={onSaveDraft}
         >
           <Save className="w-4 h-4 mr-2" />
-          {isLoading ? 'Salvando...' : 'Salvar Rascunho'}
+          {isLoading ? 'Salvando...' : 'Salvar Contrato'}
         </Button>
 
         <Button
@@ -56,8 +62,8 @@ const ContractActions = ({
 
         {showAllActions && (
           <>
-            <div className="border-t border-slate-200 my-3 pt-3">
-              <p className="text-sm text-slate-600 mb-3">Outras ações:</p>
+            <div className="border-t border-slate-200 dark:border-slate-700 my-3 pt-3">
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Outras ações:</p>
               
               <div className="space-y-2">
                 {onView && (
@@ -96,11 +102,38 @@ const ContractActions = ({
                   </Button>
                 )}
 
+                {contractStatus === 'sent' && (
+                  <div className="flex gap-2">
+                    {onApprove && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                        onClick={onApprove}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Aprovar
+                      </Button>
+                    )}
+                    {onReject && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        onClick={onReject}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Rejeitar
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 {onDelete && (
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                     onClick={onDelete}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
