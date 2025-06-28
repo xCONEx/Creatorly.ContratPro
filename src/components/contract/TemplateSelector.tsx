@@ -138,7 +138,6 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
     try {
       let userTemplates: Template[] = [];
       if (user) {
-        // Simplified query without complex type inference
         const { data: rawData, error } = await supabase
           .from('contract_templates')
           .select('id, name, category, content')
@@ -147,7 +146,7 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
         if (error) throw error;
         
         if (rawData) {
-          userTemplates = rawData.map((item) => ({
+          userTemplates = rawData.map((item: any) => ({
             id: item.id,
             name: item.name,
             category: item.category,
@@ -180,11 +179,11 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
     { id: 'custom', name: 'Meus Templates' }
   ];
 
-const filteredTemplates: Template[] = templates.filter((template: Template) => {
-  if (selectedCategory === 'all') return true;
-  if (selectedCategory === 'custom') return !!template.created_by;
-  return template.category === selectedCategory;
-});
+  const filteredTemplates = templates.filter(template => {
+    if (selectedCategory === 'all') return true;
+    if (selectedCategory === 'custom') return !!template.created_by;
+    return template.category === selectedCategory;
+  });
 
   const handleSelectTemplate = (template: Template) => {
     const isFreePlan = subscription?.plan?.name === 'Gratuito' || !subscription;
