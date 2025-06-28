@@ -62,8 +62,8 @@ const ContractActions = ({
 
         {showAllActions && (
           <>
-            <div className="border-t border-slate-200 dark:border-slate-700 my-3 pt-3">
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Outras ações:</p>
+            <div className="border-t border-slate-200 my-3 pt-3">
+              <p className="text-sm text-slate-600 mb-3">Outras ações:</p>
               
               <div className="space-y-2">
                 {onView && (
@@ -108,18 +108,18 @@ const ContractActions = ({
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                        className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
                         onClick={onApprove}
                       >
                         <Check className="w-4 h-4 mr-2" />
-                        Aprovar
+                        Assinar
                       </Button>
                     )}
                     {onReject && (
                       <Button
                         type="button"
                         variant="outline"
-                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                         onClick={onReject}
                       >
                         <X className="w-4 h-4 mr-2" />
@@ -133,7 +133,7 @@ const ContractActions = ({
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={onDelete}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
