@@ -9,8 +9,10 @@ interface SyncResult {
   sync_status: 'success' | 'failed' | 'pending';
   original_plan?: string;
   mapped_plan?: string;
+  clients_synced?: number;
   synced_at?: string;
   error?: string;
+  message?: string;
 }
 
 export const useFinanceFlowSync = () => {
@@ -35,25 +37,58 @@ export const useFinanceFlowSync = () => {
 
       if (error) {
         console.error('Sync function error:', error);
-        throw error;
+        
+        // Better error handling for common issues
+        let userMessage = "Não foi possível conectar com o FinanceFlow";
+        
+        if (error.message?.includes('CORS') || error.message?.includes('Failed to send')) {
+          userMessage = "Erro de conexão com o servidor. Tente novamente em alguns minutos.";
+        } else if (error.message?.includes('credentials')) {
+          userMessage = "Configuração do FinanceFlow não encontrada. Entre em contato com o suporte.";
+        }
+        
+        toast({
+          title: "Erro na sincronização",
+          description: userMessage,
+          variant: "destructive",
+        });
+        
+        return { success: false, sync_status: 'failed', error: error.message };
       }
 
       const result = data as SyncResult;
       
       if (result.success) {
         setLastSync(new Date().toISOString());
+        
+        const clientsMessage = result.clients_synced && result.clients_synced > 0 
+          ? ` e ${result.clients_synced} cliente${result.clients_synced > 1 ? 's' : ''} sincronizado${result.clients_synced > 1 ? 's' : ''}`
+          : '';
+        
         toast({
-          title: "Plano sincronizado!",
-          description: `Seu plano foi atualizado para: ${result.mapped_plan}`,
+          title: "Sincronização concluída!",
+          description: `Plano atualizado para: ${result.mapped_plan}${clientsMessage}`,
         });
         
-        // Force refresh of subscription data
-        window.location.reload();
+        // Force refresh of data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         console.error('Sync failed:', result.error);
+        
+        let userMessage = result.error || "Não foi possível sincronizar seu plano";
+        
+        // Provide more user-friendly error messages
+        if (result.error?.includes('not found in FinanceFlow')) {
+          userMessage = "Conta não encontrada no FinanceFlow. Verifique se você tem uma conta com o mesmo email.";
+        } else if (result.error?.includes('not configured')) {
+          userMessage = "Integração com FinanceFlow não configurada. Entre em contato com o suporte.";
+        }
+        
         toast({
           title: "Erro na sincronização",
-          description: result.error || "Não foi possível sincronizar seu plano",
+          description: userMessage,
           variant: "destructive",
         });
       }
@@ -64,9 +99,18 @@ export const useFinanceFlowSync = () => {
       console.error('Sync error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       
+      let userMessage = `Falha ao conectar com FinanceFlow: ${errorMessage}`;
+      
+      // Handle specific error types
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('network')) {
+        userMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
+      } else if (errorMessage.includes('timeout')) {
+        userMessage = "Tempo limite esgotado. Tente novamente em alguns minutos.";
+      }
+      
       toast({
         title: "Erro na sincronização",
-        description: `Falha ao conectar com FinanceFlow: ${errorMessage}`,
+        description: userMessage,
         variant: "destructive",
       });
       
