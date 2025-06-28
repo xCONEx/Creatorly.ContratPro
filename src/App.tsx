@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import { ThemeProvider } from "./components/ui/theme-provider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import Landing from "./pages/Landing";
@@ -23,78 +24,80 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/contracts" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Contracts />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/contracts/new" element={
-              <ProtectedRoute>
-                <Layout>
-                  <NewContract />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/clients" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Clients />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/features" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Features />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Settings />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Reports />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Admin />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ThemeProvider defaultTheme="system" storageKey="contratpro-theme">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Dashboard />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/contracts" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Contracts />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/contracts/new" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <NewContract />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/clients" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Clients />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/features" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Features />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Settings />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/reports" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Reports />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Admin />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;
