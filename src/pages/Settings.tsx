@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +26,6 @@ interface UserProfile {
 interface UserSettings {
   notifications_enabled: boolean;
   email_notifications: boolean;
-  contract_reminders: boolean;
   theme: 'light' | 'dark' | 'system';
   language: string;
   timezone: string;
@@ -45,7 +45,6 @@ const Settings = () => {
   const [settings, setSettings] = useState<UserSettings>({
     notifications_enabled: true,
     email_notifications: true,
-    contract_reminders: true,
     theme: 'light',
     language: 'pt-BR',
     timezone: 'America/Sao_Paulo'
@@ -100,7 +99,6 @@ const Settings = () => {
         setSettings({
           notifications_enabled: data.notifications_enabled ?? true,
           email_notifications: data.email_notifications ?? true,
-          contract_reminders: data.contract_reminders ?? true,
           theme: (data.theme as 'light' | 'dark' | 'system') || 'light',
           language: data.language || 'pt-BR',
           timezone: data.timezone || 'America/Sao_Paulo'
@@ -154,7 +152,11 @@ const Settings = () => {
         .from('user_settings')
         .upsert({
           user_id: user.id,
-          ...settings,
+          notifications_enabled: settings.notifications_enabled,
+          email_notifications: settings.email_notifications,
+          theme: settings.theme,
+          language: settings.language,
+          timezone: settings.timezone,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
@@ -187,16 +189,16 @@ const Settings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Configurações</h1>
-        <p className="text-slate-600">Gerencie seu perfil e preferências da conta</p>
+        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+        <p className="text-muted-foreground">Gerencie seu perfil e preferências da conta</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Perfil */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-card-foreground">
                 <User className="w-5 h-5" />
                 <span>Perfil do Usuário</span>
               </CardTitle>
@@ -214,6 +216,7 @@ const Settings = () => {
                       value={profile.name}
                       onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                       required
+                      className="bg-background border-border"
                     />
                   </div>
                   
@@ -225,6 +228,7 @@ const Settings = () => {
                       value={profile.email}
                       onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                       required
+                      className="bg-background border-border"
                     />
                   </div>
                 </div>
@@ -237,6 +241,7 @@ const Settings = () => {
                       value={profile.phone}
                       onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                       placeholder="(11) 99999-9999"
+                      className="bg-background border-border"
                     />
                   </div>
                   
@@ -248,7 +253,7 @@ const Settings = () => {
                         setProfile({ ...profile, user_type: value })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -278,6 +283,7 @@ const Settings = () => {
                     value={profile.cpf_cnpj}
                     onChange={(e) => setProfile({ ...profile, cpf_cnpj: e.target.value })}
                     placeholder={profile.user_type === 'pessoa_fisica' ? '000.000.000-00' : '00.000.000/0000-00'}
+                    className="bg-background border-border"
                   />
                 </div>
 
@@ -288,10 +294,11 @@ const Settings = () => {
                     value={profile.address}
                     onChange={(e) => setProfile({ ...profile, address: e.target.value })}
                     placeholder="Endereço completo"
+                    className="bg-background border-border"
                   />
                 </div>
 
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="gradient-primary text-white">
                   {isLoading ? 'Salvando...' : 'Salvar Perfil'}
                 </Button>
               </form>
@@ -299,16 +306,16 @@ const Settings = () => {
           </Card>
 
           {/* Configurações */}
-          <Card>
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-card-foreground">
                 <SettingsIcon className="w-5 h-5" />
                 <span>Preferências</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center space-x-2">
+                <h3 className="text-lg font-medium flex items-center space-x-2 text-card-foreground">
                   <Bell className="w-4 h-4" />
                   <span>Notificações</span>
                 </h3>
@@ -335,24 +342,13 @@ const Settings = () => {
                       }
                     />
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="contract-reminders">Lembretes de contratos</Label>
-                    <Switch
-                      id="contract-reminders"
-                      checked={settings.contract_reminders}
-                      onCheckedChange={(checked) => 
-                        setSettings({ ...settings, contract_reminders: checked })
-                      }
-                    />
-                  </div>
                 </div>
               </div>
 
               <Separator />
 
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Aparência e Idioma</h3>
+                <h3 className="text-lg font-medium text-card-foreground">Aparência e Idioma</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -363,7 +359,7 @@ const Settings = () => {
                         setSettings({ ...settings, theme: value })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -380,7 +376,7 @@ const Settings = () => {
                       value={settings.language}
                       onValueChange={(value) => setSettings({ ...settings, language: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -392,7 +388,7 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button onClick={handleSettingsUpdate} disabled={isLoading}>
+              <Button onClick={handleSettingsUpdate} disabled={isLoading} className="gradient-primary text-white">
                 {isLoading ? 'Salvando...' : 'Salvar Configurações'}
               </Button>
             </CardContent>
@@ -401,9 +397,9 @@ const Settings = () => {
 
         {/* Sidebar - Plano Atual */}
         <div className="space-y-6">
-          <Card>
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-card-foreground">
                 <Crown className="w-5 h-5" />
                 <span>Plano Atual</span>
               </CardTitle>
@@ -415,11 +411,11 @@ const Settings = () => {
                     <Badge variant={currentPlan.name === 'Gratuito' ? 'secondary' : 'default'} className="mb-2">
                       {currentPlan.name}
                     </Badge>
-                    <p className="text-2xl font-bold">
+                    <p className="text-2xl font-bold text-card-foreground">
                       R$ {currentPlan.price_monthly.toFixed(2)}
-                      <span className="text-sm font-normal text-slate-500">/mês</span>
+                      <span className="text-sm font-normal text-muted-foreground">/mês</span>
                     </p>
-                    <p className="text-sm text-slate-600 mt-2">{currentPlan.description}</p>
+                    <p className="text-sm text-muted-foreground mt-2">{currentPlan.description}</p>
                   </div>
                   
                   <div className="space-y-2">
@@ -429,9 +425,9 @@ const Settings = () => {
                         {contractCount} / {currentPlan.max_contracts_per_month}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="w-full bg-muted rounded-full h-2">
                       <div
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-primary h-2 rounded-full transition-all duration-300"
                         style={{ 
                           width: `${Math.min((contractCount / currentPlan.max_contracts_per_month) * 100, 100)}%` 
                         }}
@@ -440,8 +436,8 @@ const Settings = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">Recursos inclusos:</p>
-                    <ul className="text-sm text-slate-600 space-y-1">
+                    <p className="text-sm font-medium text-card-foreground">Recursos inclusos:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1">
                       {currentPlan.features.map((feature, index) => (
                         <li key={index} className="flex items-start space-x-2">
                           <span className="text-green-500 mt-0.5">✓</span>
@@ -452,7 +448,7 @@ const Settings = () => {
                   </div>
                   
                   {currentPlan.name === 'Gratuito' && (
-                    <Button className="w-full" variant="default">
+                    <Button className="w-full gradient-primary text-white" variant="default">
                       Fazer Upgrade
                     </Button>
                   )}

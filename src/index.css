@@ -46,7 +46,7 @@
   }
 
   .dark {
-    --background: 15 15 15;
+    --background: 0 0 0;
     --foreground: 229 231 235;
 
     --card: 23 23 23;
@@ -56,9 +56,9 @@
     --popover-foreground: 229 231 235;
 
     --primary: 96 165 250;
-    --primary-foreground: 15 15 15;
+    --primary-foreground: 0 0 0;
 
-    --secondary: 39 39 42;
+    --secondary: 55 65 81;
     --secondary-foreground: 229 231 235;
 
     --muted: 39 39 42;
@@ -74,10 +74,10 @@
     --input: 39 39 42;
     --ring: 96 165 250;
 
-    --sidebar-background: 15 15 15;
+    --sidebar-background: 0 0 0;
     --sidebar-foreground: 163 163 163;
     --sidebar-primary: 96 165 250;
-    --sidebar-primary-foreground: 15 15 15;
+    --sidebar-primary-foreground: 0 0 0;
     --sidebar-accent: 39 39 42;
     --sidebar-accent-foreground: 229 231 235;
     --sidebar-border: 39 39 42;
@@ -106,7 +106,7 @@
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
   }
   
   .gradient-primary {
