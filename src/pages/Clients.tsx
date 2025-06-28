@@ -61,7 +61,7 @@ const fetchRemoteClients = async () => {
   if (!user) return;
 
   try {
-    const response = await fetch('/api/get_financeflow_clients', {
+    const response = await fetch('/src/pages/api/get_financeflow_clients', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.id }),
