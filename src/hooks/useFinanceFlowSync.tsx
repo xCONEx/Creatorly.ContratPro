@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -34,6 +33,10 @@ export const useFinanceFlowSync = () => {
       console.log('=== Starting FinanceFlow sync ===');
       console.log('User email:', user.email);
       console.log('Supabase URL configured');
+      console.log('Function URL will be:', `${supabase.supabaseUrl}/functions/v1/sync-financeflow-plan`);
+      
+      // Primeiro, vamos testar se conseguimos acessar qualquer função
+      console.log('Testing function accessibility...');
       
       const { data, error } = await supabase.functions.invoke('sync-financeflow-plan', {
         body: { user_email: user.email }
@@ -43,6 +46,11 @@ export const useFinanceFlowSync = () => {
 
       if (error) {
         console.error('Sync function error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack
+        });
         
         // Enhanced error handling for specific errors
         let userMessage = "Não foi possível conectar com o FinanceFlow";
@@ -50,11 +58,15 @@ export const useFinanceFlowSync = () => {
         if (error.message?.includes('Edge Function returned a non-2xx status code')) {
           // Check if it's a 404 error (function not found)
           if (error.message?.includes('404')) {
-            userMessage = "Função de sincronização não encontrada. Verifique se a função edge está implantada no Supabase.";
+            userMessage = "Função 'sync-financeflow-plan' não encontrada no Supabase. Verifique se foi deployada corretamente.";
+            console.error('404 Error - Function not found. Please check:');
+            console.error('1. Function deployment: supabase functions deploy sync-financeflow-plan');
+            console.error('2. Function name consistency');
+            console.error('3. Supabase project configuration');
           } else if (error.message?.includes('500')) {
-            userMessage = "Erro interno na sincronização. Verifique os logs da função edge no Supabase.";
+            userMessage = "Erro interno na função de sincronização. Verifique os logs no Supabase Dashboard.";
           } else {
-            userMessage = "Erro na função de sincronização. Verifique a configuração do Supabase.";
+            userMessage = "Erro na função de sincronização. Status code não 2xx recebido.";
           }
         } else if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
           userMessage = "Erro de conexão com o servidor. Verifique sua internet e tente novamente.";
@@ -128,6 +140,9 @@ export const useFinanceFlowSync = () => {
       
     } catch (error) {
       console.error('Sync error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error constructor:', error?.constructor?.name);
+      
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       
       let userMessage = `Falha ao conectar com FinanceFlow: ${errorMessage}`;
