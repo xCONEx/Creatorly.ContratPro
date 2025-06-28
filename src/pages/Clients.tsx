@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, MapPin } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, MapPin, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -44,7 +42,7 @@ const Clients = () => {
 
   useEffect(() => {
     if (user) {
-      fetchRemoteClients();
+      fetchClients();
     }
   }, [user]);
 
@@ -57,36 +55,35 @@ const Clients = () => {
     setFilteredClients(filtered);
   }, [clients, searchTerm]);
 
-const fetchRemoteClients = async () => {
-  if (!user) return;
+  const fetchClients = async () => {
+    if (!user) return;
 
-  try {
-    const response = await fetch('/src/pages/api/get_financeflow_clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id }),
-    });
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-    if (!response.ok) throw new Error('Erro ao buscar dados da função');
-
-    const result = await response.json();
-
-    const clientsData: Client[] = (result.data || []).filter(client =>
-      !client.name.startsWith('[ARQUIVADO]')
-    );
-
-    setClients(clientsData);
-  } catch (error) {
-    console.error('Erro na função edge:', error);
-    toast({
-      title: 'Erro',
-      description: 'Não foi possível carregar clientes',
-      variant: 'destructive',
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+      if (error) throw error;
+      
+      // Filtrar clientes não arquivados (remover lógica de tags)
+      const activeClients = (data || []).filter(client => 
+        !client.name.startsWith('[ARQUIVADO]')
+      );
+      
+      setClients(activeClients);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleClientClick = (client: Client) => {
     setViewingClient(client);
@@ -175,7 +172,7 @@ const fetchRemoteClients = async () => {
       }
 
       handleCloseDialog();
-      fetchRemoteClients();
+      fetchClients();
 
     } catch (error) {
       console.error('Error saving client:', error);
@@ -193,6 +190,7 @@ const fetchRemoteClients = async () => {
     if (!confirm('Tem certeza que deseja arquivar este cliente? Ele não será deletado permanentemente.')) return;
 
     try {
+      // Marcar como arquivado modificando o nome para indicar status
       const { error } = await supabase
         .from('clients')
         .update({ 
@@ -208,7 +206,7 @@ const fetchRemoteClients = async () => {
         description: "Cliente foi arquivado com sucesso.",
       });
 
-      fetchRemoteClients();
+      fetchClients();
     } catch (error) {
       console.error('Error archiving client:', error);
       toast({
@@ -227,90 +225,227 @@ const fetchRemoteClients = async () => {
     );
   }
 
-return (
-  <div className="p-4">
-    <div className="flex justify-between items-center mb-4">
-      <h1 className="text-2xl font-bold">Clientes</h1>
-      <Button onClick={() => handleOpenDialog()}><Plus className="mr-2 h-4 w-4" />Novo Cliente</Button>
-    </div>
-
-    <div className="mb-4">
-      <div className="relative">
-        <Input
-          type="text"
-          placeholder="Buscar por nome, e-mail ou CPF/CNPJ"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+  return (
+    <div className="space-y-4 md:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Clientes</h1>
+          <p className="text-slate-600">Gerencie seus clientes e suas informações</p>
+        </div>
+        <Button 
+          onClick={() => handleOpenDialog()}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full sm:w-auto"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Cliente
+        </Button>
       </div>
+
+      {/* Search */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              placeholder="Buscar clientes por nome, email ou CPF/CNPJ..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Clients List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+        {filteredClients.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-600 mb-2">
+              {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+            </h3>
+            <p className="text-slate-500 mb-4">
+              {searchTerm 
+                ? 'Tente buscar por outros termos' 
+                : 'Adicione seu primeiro cliente para começar'}
+            </p>
+            {!searchTerm && (
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Cliente
+              </Button>
+            )}
+          </div>
+        ) : (
+          filteredClients.map((client) => (
+            <Card 
+              key={client.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleClientClick(client)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-base md:text-lg">{client.name}</CardTitle>
+                    {client.cpf_cnpj && (
+                      <CardDescription className="text-sm">{client.cpf_cnpj}</CardDescription>
+                    )}
+                  </div>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDialog(client);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(client.id);
+                      }}
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {client.email && (
+                  <div className="flex items-center space-x-2 text-sm text-slate-600">
+                    <Mail className="w-4 h-4" />
+                    <span className="truncate">{client.email}</span>
+                  </div>
+                )}
+                {client.phone && (
+                  <div className="flex items-center space-x-2 text-sm text-slate-600">
+                    <Phone className="w-4 h-4" />
+                    <span>{client.phone}</span>
+                  </div>
+                )}
+                {client.address && (
+                  <div className="flex items-center space-x-2 text-sm text-slate-600">
+                    <MapPin className="w-4 h-4" />
+                    <span className="line-clamp-2">{client.address}</span>
+                  </div>
+                )}
+                
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-xs text-slate-500">
+                    Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Dialog - Form */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingClient 
+                ? 'Atualize as informações do cliente' 
+                : 'Preencha os dados do novo cliente'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome *</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Nome completo"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
+              <Input
+                id="cpf_cnpj"
+                name="cpf_cnpj"
+                value={formData.cpf_cnpj}
+                onChange={handleInputChange}
+                placeholder="000.000.000-00 ou 00.000.000/0001-00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Endereço</Label>
+              <Input
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="Endereço completo"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCloseDialog}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                {isSubmitting ? 'Salvando...' : editingClient ? 'Atualizar' : 'Criar'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Detail Modal */}
+      <ClientDetailModal
+        client={viewingClient}
+        isOpen={!!viewingClient}
+        onClose={() => setViewingClient(null)}
+      />
     </div>
-
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {filteredClients.map((client) => (
-        <Card key={client.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleClientClick(client)}>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              {client.name}
-              <div className="space-x-2">
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleOpenDialog(client); }}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }}>
-                  <Trash2 className="h-4 w-4 text-red-600" />
-                </Button>
-              </div>
-            </CardTitle>
-            <CardDescription>{client.cpf_cnpj}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {client.email && <p className="flex items-center"><Mail className="h-4 w-4 mr-2" /> {client.email}</p>}
-            {client.phone && <p className="flex items-center"><Phone className="h-4 w-4 mr-2" /> {client.phone}</p>}
-            {client.address && <p className="flex items-center"><MapPin className="h-4 w-4 mr-2" /> {client.address}</p>}
-            <p className="text-sm text-muted-foreground mt-2">Criado em: {new Date(client.created_at).toLocaleDateString()}</p>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
-          <DialogDescription>Preencha os dados do cliente</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" value={formData.email} onChange={handleInputChange} />
-          </div>
-          <div>
-            <Label htmlFor="phone">Telefone</Label>
-            <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} />
-          </div>
-          <div>
-            <Label htmlFor="address">Endereço</Label>
-            <Input id="address" name="address" value={formData.address} onChange={handleInputChange} />
-          </div>
-          <div>
-            <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
-            <Input id="cpf_cnpj" name="cpf_cnpj" value={formData.cpf_cnpj} onChange={handleInputChange} />
-          </div>
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : 'Salvar'}</Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-
-    {viewingClient && (
-      <ClientDetailModal client={viewingClient} onClose={() => setViewingClient(null)} />
-    )}
-  </div>
-);
+  );
 };
 
 export default Clients;
