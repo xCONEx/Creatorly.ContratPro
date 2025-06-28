@@ -148,17 +148,20 @@ const Settings = () => {
 
     setIsLoading(true);
     try {
+      // Usar apenas campos que existem na tabela
+      const settingsData = {
+        user_id: user.id,
+        notifications_enabled: settings.notifications_enabled,
+        email_notifications: settings.email_notifications,
+        theme: settings.theme,
+        language: settings.language,
+        timezone: settings.timezone,
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await supabase
         .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          notifications_enabled: settings.notifications_enabled,
-          email_notifications: settings.email_notifications,
-          theme: settings.theme,
-          language: settings.language,
-          timezone: settings.timezone,
-          updated_at: new Date().toISOString()
-        }, {
+        .upsert(settingsData, {
           onConflict: 'user_id'
         });
 
