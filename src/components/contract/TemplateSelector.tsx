@@ -18,6 +18,18 @@ interface Template {
   created_by?: string;
 }
 
+interface DatabaseTemplate {
+  id: string;
+  name: string;
+  category: string;
+  content: string;
+  description: string;
+  is_default: boolean;
+  is_public: boolean;
+  created_at: string;
+  variables: any;
+}
+
 interface TemplateSelectorProps {
   onSelect: (template: Template) => void;
   onClose: () => void;
@@ -36,89 +48,97 @@ const TemplateSelector = ({ onSelect, onClose }: TemplateSelectorProps) => {
       name: 'Produção Audiovisual',
       category: 'audiovisual',
       is_premium: false,
-      content: `OBJETO: O CONTRATADO compromete-se a prestar serviços de produção audiovisual, incluindo:
+      content: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PRODUÇÃO AUDIOVISUAL
 
-a) Pré-produção: Desenvolvimento de roteiro, planejamento de filmagem, definição de locações e cronograma;
+CLÁUSULA PRIMEIRA – DO OBJETO
+O CONTRATADO compromete-se a prestar serviços de produção audiovisual, incluindo:
+a) Pré-produção: Desenvolvimento de roteiro, planejamento de filmagem, definição de locações;
 b) Produção: Captação de imagens e áudio conforme briefing estabelecido;
-c) Pós-produção: Edição, correção de cor, mixagem de áudio e finalização do material;
-d) Entrega: Disponibilização do material finalizado nos formatos acordados.
+c) Pós-produção: Edição, correção de cor, mixagem de áudio e finalização;
+d) Entrega: Material finalizado nos formatos acordados.
 
-ESPECIFICAÇÕES TÉCNICAS:
+CLÁUSULA SEGUNDA – DAS ESPECIFICAÇÕES TÉCNICAS
 - Resolução mínima: Full HD (1920x1080)
 - Formatos de entrega: MP4, MOV ou conforme especificado
-- Prazo de entrega: Conforme cronograma anexo
+- Duração: Conforme briefing aprovado
 
-DIREITOS AUTORAIS:
-Os direitos de uso do material produzido serão transferidos ao CONTRATANTE mediante pagamento integral dos valores acordados.`
+CLÁUSULA TERCEIRA – DOS DIREITOS AUTORAIS
+Os direitos de uso do material produzido serão transferidos ao CONTRATANTE mediante pagamento integral.
+
+CLÁUSULA QUARTA – DO PRAZO
+O prazo para entrega será de [X] dias úteis após aprovação do briefing final.`
     },
     {
       id: 'video-editing-1',
       name: 'Edição de Vídeo',
       category: 'audiovisual',
       is_premium: false,
-      content: `OBJETO: O CONTRATADO compromete-se a prestar serviços de edição de vídeo, incluindo:
+      content: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE EDIÇÃO DE VÍDEO
 
-a) Recebimento e organização do material bruto fornecido pelo CONTRATANTE;
-b) Edição e montagem conforme briefing e referências fornecidas;
-c) Aplicação de efeitos visuais, transições e motion graphics quando aplicável;
+CLÁUSULA PRIMEIRA – DO OBJETO
+O CONTRATADO compromete-se a prestar serviços de edição de vídeo, incluindo:
+a) Recebimento e organização do material bruto;
+b) Edição e montagem conforme briefing;
+c) Aplicação de efeitos visuais e transições;
 d) Correção de cor e tratamento de áudio;
-e) Entrega do material finalizado nos formatos solicitados.
+e) Entrega nos formatos solicitados.
 
-MATERIAIS NECESSÁRIOS:
-O CONTRATANTE deverá fornecer todo material bruto, logos, músicas licenciadas e demais elementos necessários para a edição.
+CLÁUSULA SEGUNDA – DOS MATERIAIS
+O CONTRATANTE fornecerá todo material bruto, logos, músicas licenciadas e elementos necessários.
 
-REVISÕES:
-Estão incluídas até 3 (três) rodadas de revisão no valor acordado. Revisões adicionais serão cobradas separadamente.
+CLÁUSULA TERCEIRA – DAS REVISÕES
+Estão incluídas até 3 (três) rodadas de revisão. Revisões adicionais serão cobradas separadamente.
 
-PRAZO DE ENTREGA:
-O material será entregue em até [X] dias úteis após recebimento de todo material necessário e briefing completo.`
+CLÁUSULA QUARTA – DO PRAZO
+Material será entregue em até [X] dias úteis após recebimento completo dos materiais.`
     },
     {
       id: 'marketing-digital-1',
       name: 'Marketing Digital',
       category: 'marketing',
       is_premium: true,
-      content: `OBJETO: O CONTRATADO compromete-se a prestar serviços de marketing digital, incluindo:
+      content: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE MARKETING DIGITAL
 
-a) Estratégia Digital: Desenvolvimento de estratégia personalizada para o negócio do CONTRATANTE;
-b) Gestão de Redes Sociais: Criação de conteúdo, programação de posts e engajamento;
-c) Campanhas de Tráfego Pago: Criação e gestão de campanhas no Google Ads e Facebook Ads;
-d) Análise e Relatórios: Monitoramento de métricas e entrega de relatórios mensais;
-e) SEO: Otimização para mecanismos de busca quando aplicável.
+CLÁUSULA PRIMEIRA – DO OBJETO
+O CONTRATADO prestará serviços de marketing digital, incluindo:
+a) Estratégia digital personalizada;
+b) Gestão de redes sociais e criação de conteúdo;
+c) Campanhas de tráfego pago (Google Ads, Facebook Ads);
+d) Análise de métricas e relatórios mensais;
+e) SEO e otimização para mecanismos de busca.
 
-INVESTIMENTO EM MÍDIA:
-Os valores de investimento em mídia paga (Google Ads, Facebook Ads, etc.) são de responsabilidade do CONTRATANTE e não estão inclusos no valor dos serviços.
+CLÁUSULA SEGUNDA – DO INVESTIMENTO EM MÍDIA
+Valores de investimento em mídia paga são de responsabilidade do CONTRATANTE.
 
-ACESSO E PERMISSÕES:
-O CONTRATANTE deverá fornecer acessos necessários às plataformas digitais (redes sociais, Google Analytics, etc.).
+CLÁUSULA TERCEIRA – DOS ACESSOS
+O CONTRATANTE fornecerá acessos necessários às plataformas digitais.
 
-METAS E KPIS:
-Serão estabelecidas metas específicas e KPIs a serem acompanhados mensalmente, conforme anexo técnico.`
+CLÁUSULA QUARTA – DAS METAS
+Serão estabelecidas metas específicas e KPIs conforme anexo técnico.`
     },
     {
       id: 'content-creation-1',
       name: 'Criação de Conteúdo',
       category: 'conteudo',
       is_premium: true,
-      content: `OBJETO: O CONTRATADO compromete-se a prestar serviços de criação de conteúdo, incluindo:
+      content: `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE CRIAÇÃO DE CONTEÚDO
 
-a) Planejamento Editorial: Desenvolvimento de calendário editorial mensal;
-b) Criação de Conteúdo Textual: Posts para redes sociais, artigos para blog e newsletters;
-c) Conteúdo Visual: Criação de artes gráficas, infográficos e imagens para posts;
-d) Conteúdo em Vídeo: Roteirização e produção de vídeos curtos para redes sociais;
-e) Copywriting: Textos persuasivos para campanhas e landing pages.
+CLÁUSULA PRIMEIRA – DO OBJETO
+O CONTRATADO prestará serviços de criação de conteúdo, incluindo:
+a) Planejamento editorial mensal;
+b) Criação de conteúdo textual para redes sociais;
+c) Desenvolvimento de artes gráficas e infográficos;
+d) Produção de vídeos curtos para redes sociais;
+e) Copywriting para campanhas e landing pages.
 
-APROVAÇÃO DE CONTEÚDO:
-Todo conteúdo será submetido à aprovação do CONTRATANTE antes da publicação.
+CLÁUSULA SEGUNDA – DA APROVAÇÃO
+Todo conteúdo será submetido à aprovação antes da publicação.
 
-DIRETRIZES DE MARCA:
-O CONTRATADO seguirá o manual de marca e tom de voz fornecido pelo CONTRATANTE.
+CLÁUSULA TERCEIRA – DAS DIRETRIZES
+Seguirá manual de marca e tom de voz fornecido pelo CONTRATANTE.
 
-PROPRIEDADE INTELECTUAL:
-Todo conteúdo criado será de propriedade do CONTRATANTE após pagamento integral dos valores acordados.
-
-QUANTIDADE DE PEÇAS:
-Serão produzidas [X] peças de conteúdo por mês, conforme especificado no cronograma anexo.`
+CLÁUSULA QUARTA – DA PROPRIEDADE
+Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.`
     }
   ];
 
@@ -128,7 +148,6 @@ Serão produzidas [X] peças de conteúdo por mês, conforme especificado no cro
 
   const fetchTemplates = async () => {
     try {
-      // Buscar templates personalizados do usuário
       let userTemplates: Template[] = [];
       if (user) {
         const { data, error } = await supabase
@@ -137,10 +156,18 @@ Serão produzidas [X] peças de conteúdo por mês, conforme especificado no cro
           .eq('user_id', user.id);
 
         if (error) throw error;
-        userTemplates = data || [];
+        
+        // Convert database templates to our Template interface
+        userTemplates = (data as DatabaseTemplate[]).map(template => ({
+          id: template.id,
+          name: template.name,
+          category: template.category,
+          content: template.content,
+          is_premium: false, // User templates are not premium
+          created_by: user.id
+        }));
       }
 
-      // Combinar templates padrão com templates do usuário
       const allTemplates = [...defaultTemplates, ...userTemplates];
       setTemplates(allTemplates);
     } catch (error) {
