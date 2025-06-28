@@ -18,6 +18,7 @@ interface Client {
   phone?: string;
   address?: string;
   cpf_cnpj?: string;
+  tags?: string[];
   created_at: string;
 }
 
@@ -66,7 +67,14 @@ const Clients = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setClients(data || []);
+      
+      // Parse tags se existirem
+      const clientsWithTags = (data || []).map(client => ({
+        ...client,
+        tags: client.tags ? (Array.isArray(client.tags) ? client.tags : JSON.parse(client.tags)) : []
+      }));
+      
+      setClients(clientsWithTags);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({
@@ -89,6 +97,7 @@ const Clients = () => {
         address: client.address || '',
         cpf_cnpj: client.cpf_cnpj || ''
       });
+      setTags(client.tags || []);
     } else {
       setEditingClient(null);
       setFormData({
@@ -98,8 +107,8 @@ const Clients = () => {
         address: '',
         cpf_cnpj: ''
       });
+      setTags([]);
     }
-    setTags([]);
     setTagInput('');
     setIsDialogOpen(true);
   };
@@ -134,6 +143,13 @@ const Clients = () => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -148,13 +164,15 @@ const Clients = () => {
         phone: formData.phone || null,
         address: formData.address || null,
         cpf_cnpj: formData.cpf_cnpj || null,
+        tags: tags.length > 0 ? JSON.stringify(tags) : null,
       };
 
       if (editingClient) {
         const { error } = await supabase
           .from('clients')
           .update(clientData)
-          .eq('id', editingClient.id);
+          .eq('id', editingClient.id)
+          .eq('user_id', user.id);
 
         if (error) throw error;
 
@@ -191,27 +209,32 @@ const Clients = () => {
   };
 
   const handleDelete = async (clientId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+    if (!confirm('Tem certeza que deseja arquivar este cliente? Ele não será deletado permanentemente.')) return;
 
     try {
+      // Em vez de deletar, vamos marcar como arquivado
       const { error } = await supabase
         .from('clients')
-        .delete()
-        .eq('id', clientId);
+        .update({ 
+          archived: true,
+          archived_at: new Date().toISOString()
+        })
+        .eq('id', clientId)
+        .eq('user_id', user?.id);
 
       if (error) throw error;
 
       toast({
-        title: "Cliente excluído",
-        description: "Cliente removido com sucesso.",
+        title: "Cliente arquivado",
+        description: "Cliente foi arquivado com sucesso. Ele pode ser restaurado a qualquer momento.",
       });
 
       fetchClients();
     } catch (error) {
-      console.error('Error deleting client:', error);
+      console.error('Error archiving client:', error);
       toast({
         title: "Erro",
-        description: "Erro ao excluir cliente",
+        description: "Erro ao arquivar cliente",
         variant: "destructive",
       });
     }
@@ -300,7 +323,7 @@ const Clients = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(client.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -326,6 +349,18 @@ const Clients = () => {
                     <span className="line-clamp-2">{client.address}</span>
                   </div>
                 )}
+                
+                {/* Tags */}
+                {client.tags && client.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {client.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-xs text-slate-500">
                     Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
@@ -416,7 +451,7 @@ const Clients = () => {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   placeholder="Digite uma tag"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                  onKeyPress={handleKeyPress}
                 />
                 <Button type="button" onClick={handleAddTag} variant="outline">
                   Adicionar
