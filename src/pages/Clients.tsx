@@ -57,35 +57,36 @@ const Clients = () => {
     setFilteredClients(filtered);
   }, [clients, searchTerm]);
 
-  const fetchRemoteClients = async () => {
-    if (!user) return;
+const fetchRemoteClients = async () => {
+  if (!user) return;
 
-    try {
-      const response = await fetch('/api/get_financeflow_clients', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: user.id }),
-      });
+  try {
+    const response = await fetch('/api/get_financeflow_clients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    });
 
-      if (!response.ok) throw new Error('Erro ao buscar dados da função');
+    if (!response.ok) throw new Error('Erro ao buscar dados da função');
 
-      const result = await response.json();
+    const result = await response.json();
 
-      const clientsData: Client[] = (result.data || []).filter(client =>
-        !client.name.startsWith('[ARQUIVADO]')
-      );
+    const clientsData: Client[] = (result.data || []).filter(client =>
+      !client.name.startsWith('[ARQUIVADO]')
+    );
 
-      setClients(clientsData);
-    } catch (error) {
-      console.error('Erro na função edge:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar clientes',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setClients(clientsData);
+  } catch (error) {
+    console.error('Erro na função edge:', error);
+    toast({
+      title: 'Erro',
+      description: 'Não foi possível carregar clientes',
+      variant: 'destructive',
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleClientClick = (client: Client) => {
     setViewingClient(client);
