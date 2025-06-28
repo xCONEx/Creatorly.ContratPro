@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -215,11 +214,24 @@ const Admin = () => {
     if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) return;
 
     try {
-      // Deletar todos os dados relacionados
-      const tables = ['user_subscriptions', 'user_settings', 'contracts', 'clients', 'user_profiles'];
+      // Deletar todos os dados relacionados - usando tabelas específicas uma por vez
+      const tablesToClean = [
+        'user_subscriptions',
+        'user_settings', 
+        'contracts',
+        'clients',
+        'user_profiles'
+      ];
       
-      for (const table of tables) {
-        await supabase.from(table).delete().eq('user_id', userId);
+      for (const tableName of tablesToClean) {
+        const { error } = await supabase
+          .from(tableName as any)
+          .delete()
+          .eq('user_id', userId);
+          
+        if (error) {
+          console.error(`Error deleting from ${tableName}:`, error);
+        }
       }
 
       toast({
