@@ -1,39 +1,37 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from '@supabase/supabase-js'
 
-serve(async (req) => {
-  const { user_id } = await req.json()
+const FINANCEFLOW_SUPABASE_URL = 'https://elsilxqruurrbdebxndx.supabase.co'
+const FINANCEFLOW_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...'
 
-  if (!user_id) {
-    return new Response(JSON.stringify({ error: 'Missing user_id' }), { status: 400 })
-  }
+export const financeflowClient = createClient(
+  FINANCEFLOW_SUPABASE_URL,
+  FINANCEFLOW_SERVICE_ROLE_KEY
+)
 
-  // conecta no Supabase do FINANCEFLOW
-  const financeflow = createClient(
-    'https://elsilxqruurrbdebxndx.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsc2lseHFydXVycmJkZWJ4bmR4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTk0NzY4MiwiZXhwIjoyMDY1NTIzNjgyfQ.YjDGC0dz0FpDwUZLtzml0kFUMXvGS6Y7O8_zvgRS38A'
-  )
+/**
+ * Busca os clientes do usuário no FinanceFlow, se ele tiver plano enterprise.
+ */
+export async function getFinanceflowClients(userId: string) {
+  if (!userId) throw new Error('Missing user ID')
 
-  // verifica se o usuário tem plano "enterprise"
-  const { data: profile, error: profileError } = await financeflow
+  // Verifica se o usuário tem plano enterprise
+  const { data: profile, error: profileError } = await financeflowClient
     .from('profiles')
     .select('subscription')
-    .eq('id', user_id)
+    .eq('id', userId)
     .single()
 
   if (profileError || !profile || profile.subscription !== 'enterprise') {
-    return new Response(JSON.stringify({ error: 'Acesso negado: plano inválido.' }), { status: 403 })
+    throw new Error('Acesso negado: plano inválido.')
   }
 
-  // busca os clientes do usuário no FinanceFlow
-  const { data: clients, error: clientsError } = await financeflow
+  // Busca os clientes
+  const { data: clients, error: clientsError } = await financeflowClient
     .from('clients')
     .select('*')
-    .eq('user_id', user_id)
+    .eq('user_id', userId)
 
-  if (clientsError) {
-    return new Response(JSON.stringify({ error: clientsError.message }), { status: 500 })
-  }
+  if (clientsError) throw new Error(clientsError.message)
 
-  return new Response(JSON.stringify(clients), { status: 200 })
-})
+  return clients
+}
