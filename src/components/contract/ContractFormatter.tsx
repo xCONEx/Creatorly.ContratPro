@@ -1,4 +1,3 @@
-
 export interface ContractData {
   id: string;
   title: string;
@@ -105,15 +104,6 @@ Data: ${createdDate}
 QUALIFICAÇÃO DAS PARTES
 
 CONTRATANTE:
-[Nome da empresa/pessoa física]
-CNPJ/CPF: [___.___.___-__ / __.___.___.____/____-__]
-RG: [__.___.___ SSP/__]
-Endereço: [Rua/Av., nº ___, Bairro]
-Cidade: [________], [Estado], CEP: [_____-___]
-Telefone: [(__) _____-____]
-E-mail: [________________@_______.com]
-
-CONTRATADO:
 ${contract.client_name}
 ${contract.client_email ? `E-mail: ${contract.client_email}` : 'E-mail: [________________@_______.com]'}
 CPF/CNPJ: [___.___.___-__ / __.___.___.____/____-__]
@@ -121,6 +111,15 @@ RG: [__.___.___ SSP/__]
 Endereço: [Rua/Av., nº ___, Bairro]
 Cidade: [________], [Estado], CEP: [_____-___]
 Telefone: [(__) _____-____]
+
+CONTRATADO:
+[Nome da empresa/pessoa física]
+CNPJ/CPF: [___.___.___-__ / __.___.___.____/____-__]
+RG: [__.___.___ SSP/__]
+Endereço: [Rua/Av., nº ___, Bairro]
+Cidade: [________], [Estado], CEP: [_____-___]
+Telefone: [(__) _____-____]
+E-mail: [________________@_______.com]
 
 ═══════════════════════════════════════════════════════════════════════════
 
@@ -202,7 +201,7 @@ Local: _________________, ${currentDate}
 CONTRATANTE:                                    CONTRATADO:
 
 _________________________________              _________________________________
-Nome: [Nome completo]                           Nome: ${contract.client_name}
+Nome: ${contract.client_name}                   Nome: [Nome completo]
 CPF: [___.___.___-__]                          CPF: [___.___.___-__]
 
 

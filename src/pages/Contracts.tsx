@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import ContractViewModal from '@/components/contract/ContractViewModal';
 import ContractEditModal from '@/components/contract/ContractEditModal';
+import DownloadModal from '@/components/contract/DownloadModal';
 
 interface Contract {
   id: string;
@@ -46,6 +47,7 @@ const Contracts = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewContract, setViewContract] = useState<Contract | null>(null);
   const [editContract, setEditContract] = useState<Contract | null>(null);
+  const [downloadContract, setDownloadContract] = useState<Contract | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -207,41 +209,6 @@ CPF: [_______________]                      CPF: [_______________]
   const numberToWords = (value: number): string => {
     // Implementação básica - você pode expandir conforme necessário
     return `${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} reais`;
-  };
-
-  const handleDownloadContract = async (contractId: string, title: string) => {
-    try {
-      const contract = contracts.find(c => c.id === contractId);
-      if (!contract) return;
-
-      const formattedContent = formatContractForExport(contract);
-      
-      // Criar o documento formatado
-      const blob = new Blob([formattedContent], { 
-        type: 'text/plain;charset=utf-8' 
-      });
-      
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Contrato_${title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Download concluído",
-        description: "O contrato foi baixado com formatação profissional. Importe no Google Docs para melhor visualização.",
-      });
-    } catch (error) {
-      console.error('Error downloading contract:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao baixar contrato",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleDeleteContract = async (contractId: string) => {
@@ -424,7 +391,7 @@ CPF: [_______________]                      CPF: [_______________]
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => handleDownloadContract(contract.id, contract.title)}
+                      onClick={() => setDownloadContract(contract)}
                     >
                       <Download className="w-4 h-4" />
                     </Button>
@@ -478,6 +445,12 @@ CPF: [_______________]                      CPF: [_______________]
         isOpen={!!editContract}
         onClose={() => setEditContract(null)}
         onUpdate={fetchContracts}
+      />
+
+      <DownloadModal
+        contract={downloadContract}
+        isOpen={!!downloadContract}
+        onClose={() => setDownloadContract(null)}
       />
     </div>
   );

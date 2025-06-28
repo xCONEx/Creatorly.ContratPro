@@ -43,45 +43,48 @@ const Landing = () => {
 
   const plans = [
     {
-      name: "Starter",
-      price: "R$ 97",
+      name: "Gratuito",
+      price: "R$ 0",
       period: "/mês",
-      description: "Perfeito para freelancers e pequenos negócios",
+      description: "Perfeito para testar a plataforma",
       features: [
         "10 contratos por mês",
         "3 templates básicos",
-        "Assinatura digital",
+        "Assinatura digital básica",
         "Suporte por email"
       ],
       popular: false
     },
     {
-      name: "Professional",
-      price: "R$ 297",
+      name: "Profissional",
+      price: "R$ 49",
       period: "/mês",
-      description: "Ideal para empresas em crescimento",
+      description: "Ideal para profissionais e pequenas empresas",
       features: [
         "100 contratos por mês",
-        "Templates ilimitados",
-        "API completa",
-        "Relatórios avançados",
+        "Templates premium ilimitados",
+        "API básica (1000 chamadas/mês)",
+        "Relatórios básicos",
         "Suporte prioritário",
-        "Integrações personalizadas"
+        "Templates personalizados",
+        "Backup automático"
       ],
       popular: true
     },
     {
-      name: "Enterprise",
-      price: "R$ 697",
+      name: "Empresarial",
+      price: "R$ 199",
       period: "/mês",
       description: "Para grandes empresas e corporações",
       features: [
         "Contratos ilimitados",
-        "White label",
+        "API completa ilimitada",
+        "Relatórios avançados",
+        "Analytics completo",
+        "Suporte 24/7",
         "Múltiplos usuários",
-        "Consultoria técnica",
-        "SLA garantido",
-        "Desenvolvimento customizado"
+        "White label",
+        "Integrações avançadas"
       ],
       popular: false
     }
