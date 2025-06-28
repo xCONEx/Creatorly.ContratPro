@@ -226,10 +226,90 @@ const Clients = () => {
     );
   }
 
-  return (
-    // ... [restante da sua UI render]
-    // idêntico ao original, sem alterações visuais
-  );
+return (
+  <div className="p-4">
+    <div className="flex justify-between items-center mb-4">
+      <h1 className="text-2xl font-bold">Clientes</h1>
+      <Button onClick={() => handleOpenDialog()}><Plus className="mr-2 h-4 w-4" />Novo Cliente</Button>
+    </div>
+
+    <div className="mb-4">
+      <div className="relative">
+        <Input
+          type="text"
+          placeholder="Buscar por nome, e-mail ou CPF/CNPJ"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      </div>
+    </div>
+
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {filteredClients.map((client) => (
+        <Card key={client.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleClientClick(client)}>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              {client.name}
+              <div className="space-x-2">
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleOpenDialog(client); }}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDelete(client.id); }}>
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                </Button>
+              </div>
+            </CardTitle>
+            <CardDescription>{client.cpf_cnpj}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {client.email && <p className="flex items-center"><Mail className="h-4 w-4 mr-2" /> {client.email}</p>}
+            {client.phone && <p className="flex items-center"><Phone className="h-4 w-4 mr-2" /> {client.phone}</p>}
+            {client.address && <p className="flex items-center"><MapPin className="h-4 w-4 mr-2" /> {client.address}</p>}
+            <p className="text-sm text-muted-foreground mt-2">Criado em: {new Date(client.created_at).toLocaleDateString()}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
+          <DialogDescription>Preencha os dados do cliente</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name">Nome</Label>
+            <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" value={formData.email} onChange={handleInputChange} />
+          </div>
+          <div>
+            <Label htmlFor="phone">Telefone</Label>
+            <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} />
+          </div>
+          <div>
+            <Label htmlFor="address">Endereço</Label>
+            <Input id="address" name="address" value={formData.address} onChange={handleInputChange} />
+          </div>
+          <div>
+            <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
+            <Input id="cpf_cnpj" name="cpf_cnpj" value={formData.cpf_cnpj} onChange={handleInputChange} />
+          </div>
+          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : 'Salvar'}</Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    {viewingClient && (
+      <ClientDetailModal client={viewingClient} onClose={() => setViewingClient(null)} />
+    )}
+  </div>
+);
 };
 
 export default Clients;
