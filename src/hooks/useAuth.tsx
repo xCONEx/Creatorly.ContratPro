@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   loading: boolean;
+  syncWithFinanceFlow: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +29,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Trigger FinanceFlow sync on sign in
+        if (event === 'SIGNED_IN' && session?.user?.email) {
+          console.log('User signed in, triggering FinanceFlow sync...');
+          setTimeout(() => {
+            syncWithFinanceFlow();
+          }, 2000); // Delay to ensure user data is loaded
+        }
       }
     );
 
@@ -41,6 +49,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const syncWithFinanceFlow = async () => {
+    if (!user?.email) return;
+    
+    try {
+      console.log('Syncing with FinanceFlow for:', user.email);
+      
+      const { data, error } = await supabase.functions.invoke('sync-financeflow-plan', {
+        body: { user_email: user.email }
+      });
+
+      if (error) {
+        console.error('FinanceFlow sync error:', error);
+        return;
+      }
+
+      console.log('FinanceFlow sync result:', data);
+      
+      if (data?.success) {
+        // Refresh the page to update subscription data
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+      
+    } catch (error) {
+      console.error('FinanceFlow sync failed:', error);
+    }
+  };
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/dashboard`;
@@ -85,7 +122,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn,
       signInWithGoogle,
       signOut,
-      loading
+      loading,
+      syncWithFinanceFlow
     }}>
       {children}
     </AuthContext.Provider>
