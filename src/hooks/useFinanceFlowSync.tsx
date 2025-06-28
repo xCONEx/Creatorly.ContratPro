@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -33,9 +34,6 @@ export const useFinanceFlowSync = () => {
       console.log('=== Starting FinanceFlow sync ===');
       console.log('User email:', user.email);
       console.log('Supabase URL configured');
-      console.log('Function URL will be:', `${supabase.supabaseUrl}/functions/v1/sync-financeflow-plan`);
-      
-      // Primeiro, vamos testar se conseguimos acessar qualquer função
       console.log('Testing function accessibility...');
       
       const { data, error } = await supabase.functions.invoke('sync-financeflow-plan', {
