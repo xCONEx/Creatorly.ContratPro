@@ -69,13 +69,6 @@ export type Database = {
             foreignKeyName: "contract_events_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "contract_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contract_events_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -212,13 +205,6 @@ export type Database = {
             foreignKeyName: "notifications_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
-            referencedRelation: "contract_reports"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -271,9 +257,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          email: string
-          id: string
-          name: string
+          email?: string
+          id?: string
+          name?: string
           updated_at?: string | null
           user_id: string
         }
@@ -289,34 +275,12 @@ export type Database = {
       }
     }
     Views: {
-      contract_reports: {
-        Row: {
-          client_email: string | null
-          client_name: string | null
-          created_at: string | null
-          days_to_sign: number | null
-          due_date: string | null
-          id: string | null
-          is_overdue: boolean | null
-          revenue: number | null
-          sent_at: string | null
-          signed_at: string | null
-          status: string | null
-          title: string | null
-          total_value: number | null
-          user_name: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       cleanup_old_notifications: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      get_contract_reports: {
-        Args: Record<PropertyKey, never>
-        Returns: unknown[]
       }
       handle_expired_contracts: {
         Args: Record<PropertyKey, never>

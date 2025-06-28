@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,8 +40,13 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
+        // Usar dados do user como fallback
+        setProfile({
+          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          email: user.email || ''
+        });
         return;
       }
 
@@ -57,6 +61,10 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile({
+        name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+        email: user.email || ''
+      });
     }
   };
 
@@ -69,7 +77,6 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
       const { error } = await supabase
         .from('user_profiles')
         .upsert({
-          id: crypto.randomUUID(),
           user_id: user.id,
           name: profile.name,
           email: profile.email,
