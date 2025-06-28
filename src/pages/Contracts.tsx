@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,16 +9,19 @@ import {
   FileText, 
   Plus, 
   Search, 
-  MoreVertical,
   Eye,
   Edit,
   Download,
-  Trash2
+  Trash2,
+  Check,
+  X
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import ContractViewModal from '@/components/contract/ContractViewModal';
+import ContractEditModal from '@/components/contract/ContractEditModal';
 
 interface Contract {
   id: string;
@@ -26,8 +30,11 @@ interface Contract {
   created_at: string;
   total_value?: number;
   due_date?: string;
+  content: string;
+  client_id: string;
   clients?: {
     name: string;
+    email?: string;
   };
 }
 
@@ -38,6 +45,8 @@ const Contracts = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [viewContract, setViewContract] = useState<Contract | null>(null);
+  const [editContract, setEditContract] = useState<Contract | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -58,8 +67,11 @@ const Contracts = () => {
           created_at,
           total_value,
           due_date,
+          content,
+          client_id,
           clients (
-            name
+            name,
+            email
           )
         `)
         .eq('user_id', user.id)
@@ -79,12 +91,33 @@ const Contracts = () => {
     }
   };
 
-  const handleViewContract = (contractId: string) => {
-    navigate(`/contracts/${contractId}/view`);
-  };
+  const handleStatusUpdate = async (contractId: string, newStatus: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('contracts')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', contractId)
+        .eq('user_id', user?.id);
 
-  const handleEditContract = (contractId: string) => {
-    navigate(`/contracts/${contractId}/edit`);
+      if (error) throw error;
+
+      toast({
+        title: newStatus === 'approved' ? "Contrato aprovado!" : "Contrato rejeitado!",
+        description: `O contrato foi ${newStatus === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso.`,
+      });
+
+      fetchContracts();
+    } catch (error) {
+      console.error('Error updating contract status:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status do contrato",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownloadContract = async (contractId: string) => {
@@ -126,15 +159,19 @@ const Contracts = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'sent':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Enviado</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Enviado</Badge>;
       case 'signed':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800">Assinado</Badge>;
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Assinado</Badge>;
+      case 'approved':
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Aprovado</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Rejeitado</Badge>;
       case 'draft':
-        return <Badge variant="secondary" className="bg-gray-100 text-gray-800">Rascunho</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">Rascunho</Badge>;
       case 'expired':
-        return <Badge variant="secondary" className="bg-red-100 text-red-800">Expirado</Badge>;
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Expirado</Badge>;
       default:
-        return <Badge variant="secondary">Desconhecido</Badge>;
+        return <Badge>Desconhecido</Badge>;
     }
   };
 
@@ -154,15 +191,15 @@ const Contracts = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Contratos</h1>
-          <p className="text-slate-600">Gerencie todos os seus contratos</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">Contratos</h1>
+          <p className="text-slate-600 dark:text-slate-400">Gerencie todos os seus contratos</p>
         </div>
         <Link to="/contracts/new">
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
+          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Novo Contrato
           </Button>
@@ -190,6 +227,8 @@ const Contracts = () => {
                 <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="draft">Rascunho</SelectItem>
                 <SelectItem value="sent">Enviado</SelectItem>
+                <SelectItem value="approved">Aprovado</SelectItem>
+                <SelectItem value="rejected">Rejeitado</SelectItem>
                 <SelectItem value="signed">Assinado</SelectItem>
                 <SelectItem value="expired">Expirado</SelectItem>
               </SelectContent>
@@ -199,73 +238,95 @@ const Contracts = () => {
       </Card>
 
       {/* Contracts Grid */}
-      <div className="grid gap-6">
+      <div className="grid gap-4 md:gap-6">
         {filteredContracts.map((contract) => (
           <Card key={contract.id} className="hover:shadow-lg transition-shadow duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-slate-800">{contract.title}</h3>
-                    {getStatusBadge(contract.status)}
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">{contract.title}</h3>
+                      {getStatusBadge(contract.status)}
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center text-slate-600 dark:text-slate-400 gap-1 sm:gap-4 text-sm">
+                      <span className="flex items-center">
+                        <FileText className="w-4 h-4 mr-1" />
+                        Contrato
+                      </span>
+                      <span className="hidden sm:inline">•</span>
+                      <span>{contract.clients?.name || 'Cliente não informado'}</span>
+                      <span className="hidden sm:inline">•</span>
+                      <span>{new Date(contract.created_at).toLocaleDateString('pt-BR')}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center text-slate-600 space-x-4 text-sm">
-                    <span className="flex items-center">
-                      <FileText className="w-4 h-4 mr-1" />
-                      Contrato
-                    </span>
-                    <span>•</span>
-                    <span>{contract.clients?.name || 'Cliente não informado'}</span>
-                    <span>•</span>
-                    <span>{new Date(contract.created_at).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
                   {contract.total_value && (
-                    <div className="text-right">
-                      <p className="font-semibold text-slate-800">
+                    <div className="text-left sm:text-right">
+                      <p className="font-semibold text-slate-800 dark:text-slate-200">
                         R$ {Number(contract.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                   )}
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewContract(contract.id)}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Visualizar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleEditContract(contract.id)}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Editar
-                  </Button>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDownloadContract(contract.id)}
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-red-600 hover:text-red-700"
-                    onClick={() => handleDeleteContract(contract.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setViewContract(contract)}
+                    >
+                      <Eye className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Visualizar</span>
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setEditContract(contract)}
+                    >
+                      <Edit className="w-4 h-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Editar</span>
+                    </Button>
+                    {contract.status === 'sent' && (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                          onClick={() => handleStatusUpdate(contract.id, 'approved')}
+                        >
+                          <Check className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Aprovar</span>
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                          onClick={() => handleStatusUpdate(contract.id, 'rejected')}
+                        >
+                          <X className="w-4 h-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Rejeitar</span>
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDownloadContract(contract.id)}
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                      onClick={() => handleDeleteContract(contract.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -277,10 +338,10 @@ const Contracts = () => {
         <Card>
           <CardContent className="p-12 text-center">
             <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">
               Nenhum contrato encontrado
             </h3>
-            <p className="text-slate-600 mb-6">
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
               {searchTerm || filterStatus !== 'all' 
                 ? 'Nenhum contrato corresponde aos filtros aplicados.'
                 : 'Você ainda não criou nenhum contrato.'}
@@ -294,6 +355,20 @@ const Contracts = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modals */}
+      <ContractViewModal
+        contract={viewContract}
+        isOpen={!!viewContract}
+        onClose={() => setViewContract(null)}
+      />
+
+      <ContractEditModal
+        contract={editContract}
+        isOpen={!!editContract}
+        onClose={() => setEditContract(null)}
+        onUpdate={fetchContracts}
+      />
     </div>
   );
 };
