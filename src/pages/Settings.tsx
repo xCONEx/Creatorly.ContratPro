@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
 import { User, Settings as SettingsIcon, Bell, Crown, Building2, Users } from 'lucide-react';
+import FinanceFlowSync from '@/components/features/FinanceFlowSync';
 
 interface UserProfile {
   name: string;
@@ -148,7 +148,6 @@ const Settings = () => {
 
     setIsLoading(true);
     try {
-      // Usar apenas campos que existem na tabela
       const settingsData = {
         user_id: user.id,
         notifications_enabled: settings.notifications_enabled,
@@ -199,6 +198,9 @@ const Settings = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Perfil */}
         <div className="lg:col-span-2 space-y-6">
+          {/* FinanceFlow Sync Card */}
+          <FinanceFlowSync />
+          
           <Card className="bg-card border-border">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-card-foreground">
