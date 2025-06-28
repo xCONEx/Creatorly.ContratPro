@@ -136,29 +136,8 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
 
   const fetchTemplates = async () => {
     try {
-      let userTemplates: Template[] = [];
-      if (user) {
-        const { data: rawData, error } = await supabase
-          .from('contract_templates')
-          .select('id, name, category, content')
-          .eq('user_id', user.id);
-
-        if (error) throw error;
-        
-        if (rawData) {
-          userTemplates = rawData.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            category: item.category,
-            content: item.content,
-            is_premium: false,
-            created_by: user.id
-          }));
-        }
-      }
-
-      const allTemplates = [...defaultTemplates, ...userTemplates];
-      setTemplates(allTemplates);
+      // Por enquanto, usar apenas templates padrão até a estrutura do banco estar correta
+      setTemplates(defaultTemplates);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({
@@ -175,13 +154,11 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
     { id: 'all', name: 'Todos' },
     { id: 'audiovisual', name: 'Audiovisual' },
     { id: 'marketing', name: 'Marketing' },
-    { id: 'conteudo', name: 'Conteúdo' },
-    { id: 'custom', name: 'Meus Templates' }
+    { id: 'conteudo', name: 'Conteúdo' }
   ];
 
   const filteredTemplates = templates.filter(template => {
     if (selectedCategory === 'all') return true;
-    if (selectedCategory === 'custom') return !!template.created_by;
     return template.category === selectedCategory;
   });
 
@@ -197,11 +174,6 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
       return;
     }
     onSelect(template);
-  };
-
-  const canCreateCustomTemplates = () => {
-    const planName = subscription?.plan?.name;
-    return planName === 'Profissional' || planName === 'Empresarial';
   };
 
   if (loading) {
@@ -266,23 +238,6 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
           </Card>
         ))}
       </div>
-
-      {canCreateCustomTemplates() && (
-        <Card className="border-dashed border-2 border-slate-300">
-          <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-            <Plus className="w-12 h-12 text-slate-400 mb-4" />
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">
-              Criar Template Personalizado
-            </h3>
-            <p className="text-slate-600 mb-4">
-              Crie seus próprios templates para reutilizar em futuros contratos
-            </p>
-            <Button variant="outline">
-              Criar Template
-            </Button>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
