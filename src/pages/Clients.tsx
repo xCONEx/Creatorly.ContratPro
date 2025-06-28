@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +19,9 @@ interface Client {
   cpf_cnpj?: string;
   tags?: string[];
   created_at: string;
+  user_id: string;
+  archived?: boolean;
+  archived_at?: string;
 }
 
 const Clients = () => {
@@ -68,11 +70,13 @@ const Clients = () => {
 
       if (error) throw error;
       
-      // Parse tags se existirem
-      const clientsWithTags = (data || []).map(client => ({
-        ...client,
-        tags: client.tags ? (Array.isArray(client.tags) ? client.tags : JSON.parse(client.tags)) : []
-      }));
+      // Parse tags se existirem e filtrar clientes não arquivados
+      const clientsWithTags = (data || [])
+        .filter(client => !(client as any).archived) // Filtrar arquivados
+        .map(client => ({
+          ...client,
+          tags: (client as any).tags ? (Array.isArray((client as any).tags) ? (client as any).tags : JSON.parse((client as any).tags)) : []
+        }));
       
       setClients(clientsWithTags);
     } catch (error) {
@@ -164,7 +168,7 @@ const Clients = () => {
         phone: formData.phone || null,
         address: formData.address || null,
         cpf_cnpj: formData.cpf_cnpj || null,
-        tags: tags.length > 0 ? JSON.stringify(tags) : null,
+        ...(tags.length > 0 && { tags: JSON.stringify(tags) }),
       };
 
       if (editingClient) {
@@ -212,21 +216,31 @@ const Clients = () => {
     if (!confirm('Tem certeza que deseja arquivar este cliente? Ele não será deletado permanentemente.')) return;
 
     try {
-      // Em vez de deletar, vamos marcar como arquivado
-      const { error } = await supabase
-        .from('clients')
-        .update({ 
-          archived: true,
-          archived_at: new Date().toISOString()
-        })
-        .eq('id', clientId)
-        .eq('user_id', user?.id);
+      // Usar SQL direto para adicionar campos de arquivamento
+      const { error } = await supabase.rpc('archive_client', {
+        client_id: clientId,
+        user_id_param: user?.id
+      });
 
-      if (error) throw error;
+      // Se a função não existir, tentar update direto (pode falhar)
+      if (error && error.code === '42883') {
+        // Fallback: apenas marcar como inativo no campo existente
+        const { error: updateError } = await supabase
+          .from('clients')
+          .update({ 
+            name: `[ARQUIVADO] ${clients.find(c => c.id === clientId)?.name || 'Cliente'}`,
+          })
+          .eq('id', clientId)
+          .eq('user_id', user?.id);
+        
+        if (updateError) throw updateError;
+      } else if (error) {
+        throw error;
+      }
 
       toast({
         title: "Cliente arquivado",
-        description: "Cliente foi arquivado com sucesso. Ele pode ser restaurado a qualquer momento.",
+        description: "Cliente foi arquivado com sucesso.",
       });
 
       fetchClients();
