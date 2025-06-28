@@ -1,8 +1,12 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User, Calendar, DollarSign, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { User, Calendar, DollarSign, FileText, Download } from 'lucide-react';
+import { formatProfessionalContract } from './ContractFormatter';
+import { toast } from '@/hooks/use-toast';
 
 interface Contract {
   id: string;
@@ -42,13 +46,64 @@ const ContractViewModal = ({ contract, isOpen, onClose }: ContractViewModalProps
     }
   };
 
+  const handleDownloadFormatted = () => {
+    try {
+      const formattedContract = formatProfessionalContract({
+        id: contract.id,
+        title: contract.title,
+        content: contract.content,
+        client_name: contract.clients?.name || 'Cliente não informado',
+        client_email: contract.clients?.email,
+        total_value: contract.total_value,
+        due_date: contract.due_date,
+        created_at: contract.created_at
+      });
+
+      const blob = new Blob([formattedContract], { 
+        type: 'text/plain;charset=utf-8' 
+      });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Contrato_${contract.title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download concluído",
+        description: "Contrato formatado profissionalmente. Importe no Google Docs para melhor visualização.",
+      });
+    } catch (error) {
+      console.error('Error downloading formatted contract:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao baixar contrato formatado",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>{contract.title}</span>
-            {getStatusBadge(contract.status)}
+            <div className="flex items-center gap-2">
+              {getStatusBadge(contract.status)}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadFormatted}
+                className="ml-2"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Formatado
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
@@ -109,7 +164,15 @@ const ContractViewModal = ({ contract, isOpen, onClose }: ContractViewModalProps
             </CardHeader>
             <CardContent>
               <div className="prose max-w-none">
-                <div className="whitespace-pre-wrap text-sm">{contract.content}</div>
+                <div className="whitespace-pre-wrap text-sm bg-slate-50 p-4 rounded-lg border">
+                  {contract.content}
+                </div>
+              </div>
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>💡 Dica:</strong> Use o botão "Download Formatado" para obter uma versão profissional deste contrato, 
+                  formatada conforme padrões jurídicos brasileiros. O arquivo pode ser importado no Google Docs ou Word para melhor visualização.
+                </p>
               </div>
             </CardContent>
           </Card>
