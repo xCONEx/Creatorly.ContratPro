@@ -14,6 +14,8 @@ import Dashboard from "./pages/Dashboard";
 import Contracts from "./pages/Contracts";
 import NewContract from "./pages/NewContract";
 import Clients from "./pages/Clients";
+import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +56,20 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Clients />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Reports />
                 </Layout>
               </ProtectedRoute>
             } />

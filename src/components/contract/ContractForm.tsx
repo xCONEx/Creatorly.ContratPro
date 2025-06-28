@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
 import ContractBasicInfo from './ContractBasicInfo';
 import ContractContent from './ContractContent';
@@ -17,6 +18,7 @@ interface Client {
 
 const ContractForm = () => {
   const { user } = useAuth();
+  const { checkPlanLimit } = useSubscription();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
@@ -70,6 +72,12 @@ const ContractForm = () => {
     e.preventDefault();
     if (!user) return;
 
+    // Verificar limite de contratos para o plano atual
+    const canCreateContract = await checkPlanLimit('contracts');
+    if (!canCreateContract) {
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -82,6 +90,7 @@ const ContractForm = () => {
         due_date: formData.due_date || null,
         status: action === 'send' ? 'sent' as const : 'draft' as const,
         sent_at: action === 'send' ? new Date().toISOString() : null,
+        expires_at: action === 'send' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null, // 30 dias
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };

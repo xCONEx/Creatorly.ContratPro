@@ -210,6 +210,36 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          created_at: string | null
+          data: Json
+          generated_at: string | null
+          id: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json
+          generated_at?: string | null
+          id?: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          generated_at?: string | null
+          id?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           api_access: boolean | null
@@ -248,30 +278,136 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          address: string | null
+          cpf_cnpj: string | null
           created_at: string | null
           email: string
           id: string
           name: string
+          phone: string | null
+          subscription_plan_id: string | null
+          updated_at: string | null
+          user_id: string
+          user_type: string | null
+        }
+        Insert: {
+          address?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          subscription_plan_id?: string | null
+          updated_at?: string | null
+          user_id: string
+          user_type?: string | null
+        }
+        Update: {
+          address?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          subscription_plan_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+          user_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_settings: {
+        Row: {
+          contract_reminders: boolean | null
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          language: string | null
+          notifications_enabled: boolean | null
+          theme: string | null
+          timezone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contract_reminders?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contract_reminders?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          plan_id: string
+          started_at: string | null
+          status: string | null
+          trial_ends_at: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
-          email?: string
+          expires_at?: string | null
           id?: string
-          name?: string
+          plan_id: string
+          started_at?: string | null
+          status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
-          email?: string
+          expires_at?: string | null
           id?: string
-          name?: string
+          plan_id?: string
+          started_at?: string | null
+          status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
