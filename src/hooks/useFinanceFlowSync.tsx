@@ -13,6 +13,8 @@ interface SyncResult {
   synced_at?: string;
   error?: string;
   message?: string;
+  details?: string;
+  timestamp?: string;
 }
 
 export const useFinanceFlowSync = () => {
@@ -29,22 +31,32 @@ export const useFinanceFlowSync = () => {
     setIsLoading(true);
     
     try {
-      console.log('Starting FinanceFlow sync for:', user.email);
+      console.log('=== Starting FinanceFlow sync ===');
+      console.log('User email:', user.email);
+      console.log('Supabase URL:', supabase.supabaseUrl);
       
       const { data, error } = await supabase.functions.invoke('sync-financeflow-plan', {
         body: { user_email: user.email }
       });
 
+      console.log('Function response:', { data, error });
+
       if (error) {
         console.error('Sync function error:', error);
         
-        // Better error handling for common issues
+        // Enhanced error handling
         let userMessage = "Não foi possível conectar com o FinanceFlow";
         
-        if (error.message?.includes('CORS') || error.message?.includes('Failed to send')) {
-          userMessage = "Erro de conexão com o servidor. Tente novamente em alguns minutos.";
-        } else if (error.message?.includes('credentials')) {
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
+          userMessage = "Erro de conexão com o servidor. Verifique sua internet e tente novamente.";
+        } else if (error.message?.includes('timeout')) {
+          userMessage = "Tempo limite esgotado. Tente novamente em alguns minutos.";
+        } else if (error.message?.includes('CORS')) {
+          userMessage = "Erro de configuração do servidor. Entre em contato com o suporte.";
+        } else if (error.message?.includes('credentials') || error.message?.includes('not configured')) {
           userMessage = "Configuração do FinanceFlow não encontrada. Entre em contato com o suporte.";
+        } else if (error.message?.includes('500')) {
+          userMessage = "Erro interno do servidor. Tente novamente em alguns minutos ou entre em contato com o suporte.";
         }
         
         toast({
@@ -53,10 +65,16 @@ export const useFinanceFlowSync = () => {
           variant: "destructive",
         });
         
-        return { success: false, sync_status: 'failed', error: error.message };
+        return { 
+          success: false, 
+          sync_status: 'failed', 
+          error: error.message,
+          details: JSON.stringify(error)
+        };
       }
 
       const result = data as SyncResult;
+      console.log('Sync result:', result);
       
       if (result.success) {
         setLastSync(new Date().toISOString());
@@ -84,6 +102,12 @@ export const useFinanceFlowSync = () => {
           userMessage = "Conta não encontrada no FinanceFlow. Verifique se você tem uma conta com o mesmo email.";
         } else if (result.error?.includes('not configured')) {
           userMessage = "Integração com FinanceFlow não configurada. Entre em contato com o suporte.";
+        } else if (result.error?.includes('not found in ContratPro')) {
+          userMessage = "Usuário não encontrado no ContratPro. Faça login novamente.";
+        } else if (result.error?.includes('insufficient permissions')) {
+          userMessage = "Permissões insuficientes. Entre em contato com o suporte.";
+        } else if (result.error?.includes('Plan') && result.error?.includes('not found')) {
+          userMessage = "Plano não encontrado no sistema. Entre em contato com o suporte.";
         }
         
         toast({
@@ -106,6 +130,8 @@ export const useFinanceFlowSync = () => {
         userMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
       } else if (errorMessage.includes('timeout')) {
         userMessage = "Tempo limite esgotado. Tente novamente em alguns minutos.";
+      } else if (errorMessage.includes('NetworkError')) {
+        userMessage = "Erro de rede. Verifique sua conexão e tente novamente.";
       }
       
       toast({
