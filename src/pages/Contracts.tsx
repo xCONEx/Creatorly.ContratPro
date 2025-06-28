@@ -119,39 +119,112 @@ const Contracts = () => {
     }
   };
 
-  const handleDownloadContract = async (contractId: string, title: string) => {
-    try {
-      // Buscar o contrato específico para download
-      const { data: contract, error } = await supabase
-        .from('contracts')
-        .select('title, content, created_at, clients(name)')
-        .eq('id', contractId)
-        .eq('user_id', user?.id)
-        .single();
+  const formatContractForExport = (contract: Contract) => {
+    const currentDate = new Date().toLocaleDateString('pt-BR');
+    const contractNumber = contract.id.slice(0, 8).toUpperCase();
+    
+    return `
+CONTRATO DE PRESTAÇÃO DE SERVIÇOS
 
-      if (error) throw error;
+Número: ${contractNumber}
+Data: ${currentDate}
 
-      // Criar o conteúdo do PDF como texto
-      const pdfContent = `
-CONTRATO: ${contract.title}
-Data: ${new Date(contract.created_at).toLocaleDateString('pt-BR')}
-Cliente: ${contract.clients?.name || 'Não informado'}
 
----
+CONTRATANTE:
+[Nome da empresa/pessoa]
+CNPJ/CPF: [_______________]
+Endereço: [_______________]
+Cidade: [_______________], [Estado], CEP: [_____-___]
+
+
+CONTRATADO:
+${contract.clients?.name || '[Nome do Cliente]'}
+${contract.clients?.email ? `Email: ${contract.clients.email}` : 'Email: [_______________]'}
+CPF/CNPJ: [_______________]
+Endereço: [_______________]
+Cidade: [_______________], [Estado], CEP: [_____-___]
+
+
+CLÁUSULA PRIMEIRA – DO OBJETO
 
 ${contract.content}
 
----
 
-Documento gerado pelo ContratPro
-      `;
+CLÁUSULA SEGUNDA – DO PRAZO
 
-      // Criar e baixar o arquivo
-      const blob = new Blob([pdfContent], { type: 'text/plain;charset=utf-8' });
+O presente contrato terá vigência a partir da data de sua assinatura${contract.due_date ? ` até ${new Date(contract.due_date).toLocaleDateString('pt-BR')}` : ''}.
+
+
+CLÁUSULA TERCEIRA – DAS CONDIÇÕES FINANCEIRAS
+
+${contract.total_value ? 
+  `O valor total dos serviços é de R$ ${Number(contract.total_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} (${numberToWords(contract.total_value)}).` : 
+  'O valor será definido conforme acordo entre as partes.'
+}
+
+
+CLÁUSULA QUARTA – DAS RESPONSABILIDADES
+
+O CONTRATADO compromete-se a executar os serviços com qualidade e dentro dos prazos estabelecidos.
+
+O CONTRATANTE compromete-se a fornecer todas as informações necessárias para a execução dos serviços.
+
+
+CLÁUSULA QUINTA – DA RESCISÃO
+
+Este contrato poderá ser rescindido por qualquer das partes, mediante comunicação prévia de 30 (trinta) dias.
+
+
+CLÁUSULA SEXTA – DO FORO
+
+Fica eleito o foro da comarca de [Cidade/Estado] para dirimir quaisquer questões oriundas do presente contrato.
+
+
+E por estarem assim justos e contratados, assinam o presente instrumento em duas vias de igual teor e forma.
+
+
+Local: _________________, ${currentDate}
+
+
+_________________________________        _________________________________
+CONTRATANTE                                CONTRATADO
+
+
+_________________________________        _________________________________
+Nome: [_______________]                     Nome: ${contract.clients?.name || '[_______________]'}
+CPF: [_______________]                      CPF: [_______________]
+
+
+TESTEMUNHAS:
+
+_________________________________        _________________________________
+Nome: [_______________]                     Nome: [_______________]
+CPF: [_______________]                      CPF: [_______________]
+    `;
+  };
+
+  // Função auxiliar para converter números em palavras (simplificada)
+  const numberToWords = (value: number): string => {
+    // Implementação básica - você pode expandir conforme necessário
+    return `${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} reais`;
+  };
+
+  const handleDownloadContract = async (contractId: string, title: string) => {
+    try {
+      const contract = contracts.find(c => c.id === contractId);
+      if (!contract) return;
+
+      const formattedContent = formatContractForExport(contract);
+      
+      // Criar o documento formatado
+      const blob = new Blob([formattedContent], { 
+        type: 'text/plain;charset=utf-8' 
+      });
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+      link.download = `Contrato_${title.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -159,7 +232,7 @@ Documento gerado pelo ContratPro
 
       toast({
         title: "Download concluído",
-        description: "O contrato foi baixado com sucesso.",
+        description: "O contrato foi baixado com formatação profissional. Importe no Google Docs para melhor visualização.",
       });
     } catch (error) {
       console.error('Error downloading contract:', error);
@@ -224,7 +297,7 @@ Documento gerado pelo ContratPro
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -238,7 +311,7 @@ Documento gerado pelo ContratPro
           <p className="text-slate-600">Gerencie todos os seus contratos</p>
         </div>
         <Link to="/contracts/new">
-          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 w-full sm:w-auto">
+          <Button className="gradient-primary text-white w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Novo Contrato
           </Button>
@@ -384,7 +457,7 @@ Documento gerado pelo ContratPro
                 : 'Você ainda não criou nenhum contrato.'}
             </p>
             <Link to="/contracts/new">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
+              <Button className="gradient-primary text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Primeiro Contrato
               </Button>
