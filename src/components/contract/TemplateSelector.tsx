@@ -180,11 +180,11 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
     { id: 'custom', name: 'Meus Templates' }
   ];
 
-  const filteredTemplates = templates.filter(template => {
-    if (selectedCategory === 'all') return true;
-    if (selectedCategory === 'custom') return !!template.created_by;
-    return template.category === selectedCategory;
-  });
+const filteredTemplates: Template[] = templates.filter((template: Template) => {
+  if (selectedCategory === 'all') return true;
+  if (selectedCategory === 'custom') return !!template.created_by;
+  return template.category === selectedCategory;
+});
 
   const handleSelectTemplate = (template: Template) => {
     const isFreePlan = subscription?.plan?.name === 'Gratuito' || !subscription;
