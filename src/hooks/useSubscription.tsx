@@ -35,16 +35,58 @@ export const useSubscription = () => {
 
   useEffect(() => {
     if (user) {
-      fetchSubscription();
       fetchPlans();
+      fetchSubscription();
       fetchContractCount();
+    } else {
+      setLoading(false);
     }
   }, [user]);
+
+  const fetchPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .order('price_monthly');
+
+      if (error) {
+        console.error('Error fetching plans:', error);
+        // Criar planos padrão como fallback
+        setPlans([
+          {
+            id: 'free',
+            name: 'Gratuito',
+            description: 'Plano gratuito',
+            price_monthly: 0,
+            price_yearly: 0,
+            max_contracts_per_month: 10,
+            features: ['10 contratos por mês'],
+            api_access: false
+          }
+        ]);
+        return;
+      }
+      
+      const transformedPlans = (data || []).map(plan => ({
+        ...plan,
+        features: Array.isArray(plan.features) ? plan.features : 
+                 typeof plan.features === 'string' ? JSON.parse(plan.features) : []
+      }));
+      
+      setPlans(transformedPlans);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      setPlans([]);
+    }
+  };
 
   const fetchSubscription = async () => {
     if (!user) return;
 
     try {
+      console.log('Fetching subscription for user:', user.id);
+      
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select(`
@@ -52,12 +94,16 @@ export const useSubscription = () => {
           plan:subscription_plans(*)
         `)
         .eq('user_id', user.id)
-        .maybeSingle(); // Usa maybeSingle() ao invés de single()
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        // Se houver erro, tentar criar uma assinatura padrão
+        await createDefaultSubscription();
+        return;
+      }
       
-      if (data) {
-        // Transformar os dados para garantir que features seja string[]
+      if (data && data.plan) {
         const transformedData = {
           ...data,
           plan: {
@@ -69,11 +115,32 @@ export const useSubscription = () => {
         
         setSubscription(transformedData);
       } else {
-        // Se não há assinatura, criar uma padrão com o plano gratuito
         await createDefaultSubscription();
       }
     } catch (error) {
-      console.error('Error fetching subscription:', error);
+      console.error('Error in fetchSubscription:', error);
+      // Criar uma assinatura de fallback
+      setSubscription({
+        id: 'fallback',
+        user_id: user.id,
+        plan_id: 'free',
+        status: 'active',
+        started_at: new Date().toISOString(),
+        expires_at: null,
+        trial_ends_at: null,
+        plan: {
+          id: 'free',
+          name: 'Gratuito',
+          description: 'Plano gratuito',
+          price_monthly: 0,
+          price_yearly: 0,
+          max_contracts_per_month: 10,
+          features: ['10 contratos por mês'],
+          api_access: false
+        }
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,6 +148,8 @@ export const useSubscription = () => {
     if (!user) return;
 
     try {
+      console.log('Creating default subscription for user:', user.id);
+      
       // Buscar o plano gratuito
       const { data: freePlan, error: planError } = await supabase
         .from('subscription_plans')
@@ -90,10 +159,30 @@ export const useSubscription = () => {
 
       if (planError || !freePlan) {
         console.error('Error fetching free plan:', planError);
+        // Fallback se não conseguir buscar o plano
+        setSubscription({
+          id: 'fallback',
+          user_id: user.id,
+          plan_id: 'free',
+          status: 'active',
+          started_at: new Date().toISOString(),
+          expires_at: null,
+          trial_ends_at: null,
+          plan: {
+            id: 'free',
+            name: 'Gratuito',
+            description: 'Plano gratuito',
+            price_monthly: 0,
+            price_yearly: 0,
+            max_contracts_per_month: 10,
+            features: ['10 contratos por mês'],
+            api_access: false
+          }
+        });
         return;
       }
 
-      // Criar assinatura gratuita
+      // Tentar criar assinatura
       const { data: newSubscription, error: subError } = await supabase
         .from('user_subscriptions')
         .insert({
@@ -108,9 +197,11 @@ export const useSubscription = () => {
         `)
         .single();
 
-      if (subError) throw subError;
+      if (subError) {
+        console.error('Error creating subscription:', subError);
+        return;
+      }
 
-      // Transformar os dados
       const transformedData = {
         ...newSubscription,
         plan: {
@@ -126,35 +217,10 @@ export const useSubscription = () => {
     }
   };
 
-  const fetchPlans = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .order('price_monthly');
-
-      if (error) throw error;
-      
-      // Transformar os dados para garantir que features seja string[]
-      const transformedPlans = (data || []).map(plan => ({
-        ...plan,
-        features: Array.isArray(plan.features) ? plan.features : 
-                 typeof plan.features === 'string' ? JSON.parse(plan.features) : []
-      }));
-      
-      setPlans(transformedPlans);
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchContractCount = async () => {
     if (!user) return;
 
     try {
-      // Contar contratos do mês atual
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -165,7 +231,10 @@ export const useSubscription = () => {
         .eq('user_id', user.id)
         .gte('created_at', startOfMonth.toISOString());
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching contract count:', error);
+        return;
+      }
       
       setContractCount(data?.length || 0);
     } catch (error) {
