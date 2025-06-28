@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,11 +19,8 @@ interface Client {
   phone?: string;
   address?: string;
   cpf_cnpj?: string;
-  tags?: string[];
   created_at: string;
   user_id: string;
-  archived?: boolean;
-  archived_at?: string;
 }
 
 const Clients = () => {
@@ -35,8 +33,6 @@ const Clients = () => {
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -72,15 +68,12 @@ const Clients = () => {
 
       if (error) throw error;
       
-      // Parse tags se existirem e filtrar clientes não arquivados
-      const clientsWithTags = (data || [])
-        .filter(client => !(client as any).archived) // Filtrar arquivados
-        .map(client => ({
-          ...client,
-          tags: (client as any).tags ? (Array.isArray((client as any).tags) ? (client as any).tags : JSON.parse((client as any).tags)) : []
-        }));
+      // Filtrar clientes não arquivados (remover lógica de tags)
+      const activeClients = (data || []).filter(client => 
+        !client.name.startsWith('[ARQUIVADO]')
+      );
       
-      setClients(clientsWithTags);
+      setClients(activeClients);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({
@@ -107,7 +100,6 @@ const Clients = () => {
         address: client.address || '',
         cpf_cnpj: client.cpf_cnpj || ''
       });
-      setTags(client.tags || []);
     } else {
       setEditingClient(null);
       setFormData({
@@ -117,9 +109,7 @@ const Clients = () => {
         address: '',
         cpf_cnpj: ''
       });
-      setTags([]);
     }
-    setTagInput('');
     setIsDialogOpen(true);
   };
 
@@ -133,31 +123,11 @@ const Clients = () => {
       address: '',
       cpf_cnpj: ''
     });
-    setTags([]);
-    setTagInput('');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag();
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,7 +144,6 @@ const Clients = () => {
         phone: formData.phone || null,
         address: formData.address || null,
         cpf_cnpj: formData.cpf_cnpj || null,
-        ...(tags.length > 0 && { tags: JSON.stringify(tags) }),
       };
 
       if (editingClient) {
@@ -369,22 +338,6 @@ const Clients = () => {
                   </div>
                 )}
                 
-                {/* Tags */}
-                {client.tags && client.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {client.tags.slice(0, 3).map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {client.tags.length > 3 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{client.tags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-                
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
@@ -466,34 +419,6 @@ const Clients = () => {
                 onChange={handleInputChange}
                 placeholder="Endereço completo"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Tags Personalizadas</Label>
-              <div className="flex space-x-2">
-                <Input
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  placeholder="Digite uma tag"
-                  onKeyPress={handleKeyPress}
-                />
-                <Button type="button" onClick={handleAddTag} variant="outline">
-                  Adicionar
-                </Button>
-              </div>
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="cursor-pointer">
-                      {tag}
-                      <X 
-                        className="w-3 h-3 ml-1" 
-                        onClick={() => handleRemoveTag(tag)}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
