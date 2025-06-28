@@ -9,6 +9,7 @@ import { Plus, Search, Edit, Trash2, User, Mail, Phone, MapPin, X } from 'lucide
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import ClientDetailModal from '@/components/client/ClientDetailModal';
 
 interface Client {
   id: string;
@@ -31,6 +32,7 @@ const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
@@ -89,6 +91,10 @@ const Clients = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleClientClick = (client: Client) => {
+    setViewingClient(client);
   };
 
   const handleOpenDialog = (client?: Client) => {
@@ -252,16 +258,16 @@ const Clients = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Clientes</h1>
-          <p className="text-slate-600">Gerencie seus clientes e suas informações</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Clientes</h1>
+          <p className="text-slate-600 dark:text-slate-400">Gerencie seus clientes e suas informações</p>
         </div>
         <Button 
           onClick={() => handleOpenDialog()}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4 mr-2" />
           Novo Cliente
@@ -284,14 +290,14 @@ const Clients = () => {
       </Card>
 
       {/* Clients List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
         {filteredClients.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-600 mb-2">
+            <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-400 mb-2">
               {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
             </h3>
-            <p className="text-slate-500 mb-4">
+            <p className="text-slate-500 dark:text-slate-400 mb-4">
               {searchTerm 
                 ? 'Tente buscar por outros termos' 
                 : 'Adicione seu primeiro cliente para começar'}
@@ -305,28 +311,38 @@ const Clients = () => {
           </div>
         ) : (
           filteredClients.map((client) => (
-            <Card key={client.id} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={client.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleClientClick(client)}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg">{client.name}</CardTitle>
+                    <CardTitle className="text-base md:text-lg">{client.name}</CardTitle>
                     {client.cpf_cnpj && (
-                      <CardDescription>{client.cpf_cnpj}</CardDescription>
+                      <CardDescription className="text-sm">{client.cpf_cnpj}</CardDescription>
                     )}
                   </div>
                   <div className="flex space-x-1">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleOpenDialog(client)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDialog(client);
+                      }}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDelete(client.id)}
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(client.id);
+                      }}
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -335,19 +351,19 @@ const Clients = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {client.email && (
-                  <div className="flex items-center space-x-2 text-sm text-slate-600">
+                  <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
                     <Mail className="w-4 h-4" />
-                    <span>{client.email}</span>
+                    <span className="truncate">{client.email}</span>
                   </div>
                 )}
                 {client.phone && (
-                  <div className="flex items-center space-x-2 text-sm text-slate-600">
+                  <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
                     <Phone className="w-4 h-4" />
                     <span>{client.phone}</span>
                   </div>
                 )}
                 {client.address && (
-                  <div className="flex items-center space-x-2 text-sm text-slate-600">
+                  <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
                     <MapPin className="w-4 h-4" />
                     <span className="line-clamp-2">{client.address}</span>
                   </div>
@@ -356,16 +372,21 @@ const Clients = () => {
                 {/* Tags */}
                 {client.tags && client.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {client.tags.map((tag, index) => (
+                    {client.tags.slice(0, 3).map((tag, index) => (
                       <Badge key={index} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
+                    {client.tags.length > 3 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{client.tags.length - 3}
+                      </Badge>
+                    )}
                   </div>
                 )}
                 
-                <div className="pt-2 border-t border-slate-100">
-                  <p className="text-xs text-slate-500">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
@@ -375,9 +396,9 @@ const Clients = () => {
         )}
       </div>
 
-      {/* Dialog */}
+      {/* Dialog - Form */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
@@ -475,22 +496,30 @@ const Clients = () => {
               )}
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCloseDialog}
                 disabled={isSubmitting}
+                className="w-full sm:w-auto"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                 {isSubmitting ? 'Salvando...' : editingClient ? 'Atualizar' : 'Criar'}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Client Detail Modal */}
+      <ClientDetailModal
+        client={viewingClient}
+        isOpen={!!viewingClient}
+        onClose={() => setViewingClient(null)}
+      />
     </div>
   );
 };
