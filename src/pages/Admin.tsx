@@ -67,15 +67,18 @@ const Admin = () => {
     if (!user) return;
 
     try {
-      // Check if user is admin by email (since user_roles table doesn't exist in types)
+      console.log('Checking admin role for:', user.email);
+      
+      // Check if user is admin by email
       const adminEmails = ['yuriadrskt@gmail.com'];
       const adminRole = adminEmails.includes(user.email || '');
       
+      console.log('Is admin:', adminRole);
       setIsAdmin(adminRole);
       
       if (adminRole) {
-        fetchUsers();
-        fetchPlans();
+        await fetchUsers();
+        await fetchPlans();
       }
     } catch (error) {
       console.error('Error checking admin role:', error);
@@ -86,6 +89,8 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users...');
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select(`
@@ -103,6 +108,9 @@ const Admin = () => {
             )
           )
         `);
+
+      console.log('User profiles data:', data);
+      console.log('User profiles error:', error);
 
       if (error) throw error;
       
@@ -124,9 +132,15 @@ const Admin = () => {
         } : undefined
       }));
       
+      console.log('Transformed users:', transformedUsers);
       setUsers(transformedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao buscar usuários",
+        variant: "destructive",
+      });
     }
   };
 
@@ -225,6 +239,7 @@ const Admin = () => {
           <Shield className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-slate-800 mb-2">Acesso Negado</h2>
           <p className="text-slate-600">Você não tem permissão para acessar esta página.</p>
+          <p className="text-sm text-slate-500 mt-2">Email atual: {user?.email}</p>
         </div>
       </div>
     );
