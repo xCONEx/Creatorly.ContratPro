@@ -8,7 +8,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Layout from "@/components/Layout";
-import Index from "./pages/Index";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -33,7 +32,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Landing />} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -48,6 +47,13 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Contracts />
+                  </Layout>
+                </ProtectedRoute>
+              } />
+              <Route path="/contracts/new" element={
+                <ProtectedRoute>
+                  <Layout>
+                    <NewContract />
                   </Layout>
                 </ProtectedRoute>
               } />
