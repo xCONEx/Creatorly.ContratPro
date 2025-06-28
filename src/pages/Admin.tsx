@@ -69,9 +69,8 @@ const Admin = () => {
     try {
       console.log('Checking admin role for:', user.email);
       
-      // Check if user is admin by email
-      const adminEmails = ['yuriadrskt@gmail.com'];
-      const adminRole = adminEmails.includes(user.email || '');
+      // Verificar se é admin pelo email
+      const adminRole = user.email === 'yuriadrskt@gmail.com';
       
       console.log('Is admin:', adminRole);
       setIsAdmin(adminRole);
@@ -91,46 +90,62 @@ const Admin = () => {
     try {
       console.log('Fetching users...');
       
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from('user_profiles')
         .select(`
           user_id,
           name,
           email,
           user_type,
-          created_at,
-          user_subscriptions (
-            status,
-            subscription_plans (
-              id,
-              name,
-              price_monthly
-            )
+          created_at
+        `);
+
+      console.log('User profiles data:', profiles);
+      
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        return;
+      }
+
+      // Buscar assinaturas separadamente
+      const { data: subscriptions, error: subError } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          user_id,
+          status,
+          subscription_plans (
+            id,
+            name,
+            price_monthly
           )
         `);
 
-      console.log('User profiles data:', data);
-      console.log('User profiles error:', error);
+      if (subError) {
+        console.error('Error fetching subscriptions:', subError);
+      }
 
-      if (error) throw error;
-      
-      const transformedUsers = (data || []).map(profile => ({
-        id: profile.user_id,
-        email: profile.email,
-        created_at: profile.created_at,
-        user_profiles: {
-          name: profile.name,
-          user_type: profile.user_type
-        },
-        user_subscriptions: profile.user_subscriptions && Array.isArray(profile.user_subscriptions) && profile.user_subscriptions.length > 0 ? {
-          status: profile.user_subscriptions[0].status,
-          plan: {
-            id: profile.user_subscriptions[0].subscription_plans?.id || '',
-            name: profile.user_subscriptions[0].subscription_plans?.name || '',
-            price_monthly: profile.user_subscriptions[0].subscription_plans?.price_monthly || 0
-          }
-        } : undefined
-      }));
+      // Combinar dados
+      const transformedUsers = (profiles || []).map(profile => {
+        const userSub = subscriptions?.find(sub => sub.user_id === profile.user_id);
+        
+        return {
+          id: profile.user_id,
+          email: profile.email,
+          created_at: profile.created_at,
+          user_profiles: {
+            name: profile.name,
+            user_type: profile.user_type
+          },
+          user_subscriptions: userSub ? {
+            status: userSub.status,
+            plan: {
+              id: userSub.subscription_plans?.id || '',
+              name: userSub.subscription_plans?.name || '',
+              price_monthly: userSub.subscription_plans?.price_monthly || 0
+            }
+          } : undefined
+        };
+      });
       
       console.log('Transformed users:', transformedUsers);
       setUsers(transformedUsers);
@@ -151,7 +166,11 @@ const Admin = () => {
         .select('id, name, price_monthly')
         .order('price_monthly');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching plans:', error);
+        return;
+      }
+      
       setPlans(data || []);
     } catch (error) {
       console.error('Error fetching plans:', error);
@@ -196,12 +215,12 @@ const Admin = () => {
     if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) return;
 
     try {
-      // Primeiro, deletar todos os dados relacionados ao usuário
-      await supabase.from('user_subscriptions').delete().eq('user_id', userId);
-      await supabase.from('user_settings').delete().eq('user_id', userId);
-      await supabase.from('contracts').delete().eq('user_id', userId);
-      await supabase.from('clients').delete().eq('user_id', userId);
-      await supabase.from('user_profiles').delete().eq('user_id', userId);
+      // Deletar todos os dados relacionados
+      const tables = ['user_subscriptions', 'user_settings', 'contracts', 'clients', 'user_profiles'];
+      
+      for (const table of tables) {
+        await supabase.from(table).delete().eq('user_id', userId);
+      }
 
       toast({
         title: "Usuário excluído",
