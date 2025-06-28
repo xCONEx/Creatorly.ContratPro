@@ -2,8 +2,9 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, BarChart3, Settings, X, Plus, Home } from 'lucide-react';
+import { FileText, Users, BarChart3, Settings, X, Plus, Home, Shield, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -12,15 +13,25 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
+  const { user } = useAuth();
+  
+  // Verificar se é admin pelo email
+  const isAdmin = user?.email === 'yuriadrskt@gmail.com';
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
     { icon: FileText, label: 'Contratos', path: '/contracts' },
     { icon: Plus, label: 'Novo Contrato', path: '/contracts/new' },
     { icon: Users, label: 'Clientes', path: '/clients' },
+    { icon: Zap, label: 'Recursos', path: '/features' },
     { icon: BarChart3, label: 'Relatórios', path: '/reports' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
+
+  // Adicionar item admin se for administrador
+  if (isAdmin) {
+    menuItems.splice(-1, 0, { icon: Shield, label: 'Painel Admin', path: '/admin' });
+  }
 
   return (
     <>
