@@ -216,27 +216,16 @@ const Clients = () => {
     if (!confirm('Tem certeza que deseja arquivar este cliente? Ele não será deletado permanentemente.')) return;
 
     try {
-      // Usar SQL direto para adicionar campos de arquivamento
-      const { error } = await supabase.rpc('archive_client', {
-        client_id: clientId,
-        user_id_param: user?.id
-      });
-
-      // Se a função não existir, tentar update direto (pode falhar)
-      if (error && error.code === '42883') {
-        // Fallback: apenas marcar como inativo no campo existente
-        const { error: updateError } = await supabase
-          .from('clients')
-          .update({ 
-            name: `[ARQUIVADO] ${clients.find(c => c.id === clientId)?.name || 'Cliente'}`,
-          })
-          .eq('id', clientId)
-          .eq('user_id', user?.id);
-        
-        if (updateError) throw updateError;
-      } else if (error) {
-        throw error;
-      }
+      // Marcar como arquivado modificando o nome para indicar status
+      const { error } = await supabase
+        .from('clients')
+        .update({ 
+          name: `[ARQUIVADO] ${clients.find(c => c.id === clientId)?.name || 'Cliente'}`,
+        })
+        .eq('id', clientId)
+        .eq('user_id', user?.id);
+      
+      if (error) throw error;
 
       toast({
         title: "Cliente arquivado",
