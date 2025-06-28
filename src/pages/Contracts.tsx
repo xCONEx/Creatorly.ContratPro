@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,7 @@ import {
   Download,
   Trash2
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -34,6 +33,7 @@ interface Contract {
 
 const Contracts = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,6 +77,22 @@ const Contracts = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewContract = (contractId: string) => {
+    navigate(`/contracts/${contractId}/view`);
+  };
+
+  const handleEditContract = (contractId: string) => {
+    navigate(`/contracts/${contractId}/edit`);
+  };
+
+  const handleDownloadContract = async (contractId: string) => {
+    toast({
+      title: "Download iniciado",
+      description: "O download do contrato será iniciado em breve.",
+    });
+    // TODO: Implementar download do PDF
   };
 
   const handleDeleteContract = async (contractId: string) => {
@@ -212,25 +228,34 @@ const Contracts = () => {
                       </p>
                     </div>
                   )}
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleViewContract(contract.id)}
+                  >
                     <Eye className="w-4 h-4 mr-2" />
                     Visualizar
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleEditContract(contract.id)}
+                  >
                     <Edit className="w-4 h-4 mr-2" />
                     Editar
                   </Button>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDownloadContract(contract.id)}
+                  >
                     <Download className="w-4 h-4" />
                   </Button>
                   <Button 
