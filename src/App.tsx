@@ -17,6 +17,7 @@ import Clients from "./pages/Clients";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
+import Features from "./pages/Features";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Clients />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/features" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Features />
                 </Layout>
               </ProtectedRoute>
             } />
