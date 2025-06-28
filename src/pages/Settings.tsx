@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +33,7 @@ interface UserSettings {
 
 const Settings = () => {
   const { user } = useAuth();
-  const { subscription, plans } = useSubscription();
+  const { subscription, plans, contractCount } = useSubscription();
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     email: '',
@@ -68,7 +67,7 @@ const Settings = () => {
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       if (data) {
@@ -94,7 +93,7 @@ const Settings = () => {
         .from('user_settings')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       if (data) {
@@ -421,6 +420,23 @@ const Settings = () => {
                       <span className="text-sm font-normal text-slate-500">/mês</span>
                     </p>
                     <p className="text-sm text-slate-600 mt-2">{currentPlan.description}</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Contratos este mês:</span>
+                      <span className="text-sm font-bold">
+                        {contractCount} / {currentPlan.max_contracts_per_month}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Math.min((contractCount / currentPlan.max_contracts_per_month) * 100, 100)}%` 
+                        }}
+                      />
+                    </div>
                   </div>
                   
                   <div className="space-y-2">

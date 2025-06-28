@@ -16,6 +16,7 @@ import NewContract from "./pages/NewContract";
 import Clients from "./pages/Clients";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Reports />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Admin />
                 </Layout>
               </ProtectedRoute>
             } />

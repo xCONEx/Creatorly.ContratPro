@@ -18,7 +18,7 @@ interface Client {
 
 const ContractForm = () => {
   const { user } = useAuth();
-  const { checkPlanLimit } = useSubscription();
+  const { checkPlanLimit, refetch } = useSubscription();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
@@ -109,6 +109,9 @@ const ContractForm = () => {
           ? "O contrato foi enviado para o cliente" 
           : "O contrato foi salvo como rascunho",
       });
+
+      // Atualizar contador de contratos
+      refetch();
 
       navigate('/contracts');
 

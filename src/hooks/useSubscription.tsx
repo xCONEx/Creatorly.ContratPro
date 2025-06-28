@@ -31,11 +31,13 @@ export const useSubscription = () => {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contractCount, setContractCount] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchSubscription();
       fetchPlans();
+      fetchContractCount();
     }
   }, [user]);
 
@@ -50,23 +52,77 @@ export const useSubscription = () => {
           plan:subscription_plans(*)
         `)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle(); // Usa maybeSingle() ao invés de single()
 
       if (error) throw error;
       
-      // Transformar os dados para garantir que features seja string[]
+      if (data) {
+        // Transformar os dados para garantir que features seja string[]
+        const transformedData = {
+          ...data,
+          plan: {
+            ...data.plan,
+            features: Array.isArray(data.plan.features) ? data.plan.features : 
+                     typeof data.plan.features === 'string' ? JSON.parse(data.plan.features) : []
+          }
+        };
+        
+        setSubscription(transformedData);
+      } else {
+        // Se não há assinatura, criar uma padrão com o plano gratuito
+        await createDefaultSubscription();
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+    }
+  };
+
+  const createDefaultSubscription = async () => {
+    if (!user) return;
+
+    try {
+      // Buscar o plano gratuito
+      const { data: freePlan, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('name', 'Gratuito')
+        .single();
+
+      if (planError || !freePlan) {
+        console.error('Error fetching free plan:', planError);
+        return;
+      }
+
+      // Criar assinatura gratuita
+      const { data: newSubscription, error: subError } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          plan_id: freePlan.id,
+          status: 'active',
+          started_at: new Date().toISOString()
+        })
+        .select(`
+          *,
+          plan:subscription_plans(*)
+        `)
+        .single();
+
+      if (subError) throw subError;
+
+      // Transformar os dados
       const transformedData = {
-        ...data,
+        ...newSubscription,
         plan: {
-          ...data.plan,
-          features: Array.isArray(data.plan.features) ? data.plan.features : 
-                   typeof data.plan.features === 'string' ? JSON.parse(data.plan.features) : []
+          ...newSubscription.plan,
+          features: Array.isArray(newSubscription.plan.features) ? newSubscription.plan.features : 
+                   typeof newSubscription.plan.features === 'string' ? JSON.parse(newSubscription.plan.features) : []
         }
       };
       
       setSubscription(transformedData);
     } catch (error) {
-      console.error('Error fetching subscription:', error);
+      console.error('Error creating default subscription:', error);
     }
   };
 
@@ -94,11 +150,11 @@ export const useSubscription = () => {
     }
   };
 
-  const checkPlanLimit = async (feature: 'contracts' | 'api') => {
-    if (!subscription) return false;
+  const fetchContractCount = async () => {
+    if (!user) return;
 
-    if (feature === 'contracts') {
-      // Verificar quantos contratos foram criados este mês
+    try {
+      // Contar contratos do mês atual
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
@@ -106,15 +162,21 @@ export const useSubscription = () => {
       const { data, error } = await supabase
         .from('contracts')
         .select('id')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .gte('created_at', startOfMonth.toISOString());
 
-      if (error) {
-        console.error('Error checking contract limit:', error);
-        return false;
-      }
+      if (error) throw error;
+      
+      setContractCount(data?.length || 0);
+    } catch (error) {
+      console.error('Error fetching contract count:', error);
+    }
+  };
 
-      const contractCount = data?.length || 0;
+  const checkPlanLimit = async (feature: 'contracts' | 'api') => {
+    if (!subscription) return false;
+
+    if (feature === 'contracts') {
       const limit = subscription.plan.max_contracts_per_month;
       
       if (contractCount >= limit) {
@@ -143,7 +205,11 @@ export const useSubscription = () => {
     subscription,
     plans,
     loading,
+    contractCount,
     checkPlanLimit,
-    refetch: fetchSubscription
+    refetch: () => {
+      fetchSubscription();
+      fetchContractCount();
+    }
   };
 };
