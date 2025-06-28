@@ -2,7 +2,6 @@
 import type { Config } from "tailwindcss";
 
 export default {
-	darkMode: ["class"],
 	content: [
 		"./pages/**/*.{ts,tsx}",
 		"./components/**/*.{ts,tsx}",
@@ -23,52 +22,42 @@ export default {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
 			},
 			colors: {
-				border: 'hsl(var(--border))',
-				input: 'hsl(var(--input))',
-				ring: 'hsl(var(--ring))',
-				background: 'hsl(var(--background))',
-				foreground: 'hsl(var(--foreground))',
+				border: '#E5E7EB',
+				input: '#E5E7EB',
+				ring: '#2563EB',
+				background: '#FFFFFF',
+				foreground: '#1A1A1A',
 				primary: {
-					DEFAULT: '#6E40FF',
-					50: '#F0F4FF',
-					100: '#E5E7FF',
-					200: '#C4B5FD',
-					300: '#A78BFA',
-					400: '#8B5CF6',
-					500: '#6E40FF',
-					600: '#5B21B6',
-					700: '#4C1D95',
-					800: '#3B1F87',
-					900: '#2E1065',
-					foreground: 'hsl(var(--primary-foreground))'
+					DEFAULT: '#2A7AE4',
+					50: '#EBF4FE',
+					100: '#D6E9FD',
+					200: '#AED3FB',
+					300: '#85BCF9',
+					400: '#5DA6F7',
+					500: '#2A7AE4',
+					600: '#1D5BBF',
+					700: '#16478F',
+					800: '#0F3460',
+					900: '#082030',
+					foreground: '#FFFFFF'
 				},
 				secondary: {
-					DEFAULT: '#2D65FF',
-					50: '#F0F4FF',
-					100: '#E0E7FF',
-					200: '#C7D2FE',
-					300: '#A5B4FC',
-					400: '#818CF8',
-					500: '#2D65FF',
-					600: '#4F46E5',
-					700: '#4338CA',
-					800: '#3730A3',
-					900: '#312E81',
-					foreground: 'hsl(var(--secondary-foreground))'
+					DEFAULT: '#F5F6FA',
+					50: '#FAFAFB',
+					100: '#F5F6FA',
+					200: '#E5E7EB',
+					300: '#D1D5DB',
+					400: '#9CA3AF',
+					500: '#6B7280',
+					600: '#4B5563',
+					700: '#374151',
+					800: '#1F2937',
+					900: '#111827',
+					foreground: '#1A1A1A'
 				},
 				accent: {
-					DEFAULT: '#B065FF',
-					50: '#F5F3FF',
-					100: '#EDE9FE',
-					200: '#DDD6FE',
-					300: '#C4B5FD',
-					400: '#B065FF',
-					500: '#A855F7',
-					600: '#9333EA',
-					700: '#7C3AED',
-					800: '#6B21B6',
-					900: '#581C87',
-					foreground: 'hsl(var(--accent-foreground))'
+					DEFAULT: '#F5F6FA',
+					foreground: '#1A1A1A'
 				},
 				success: {
 					DEFAULT: '#10B981',
@@ -84,17 +73,30 @@ export default {
 					900: '#064E3B',
 				},
 				warning: {
-					DEFAULT: '#FACC15',
-					50: '#FEFCE8',
-					100: '#FEF9C3',
-					200: '#FEF08A',
-					300: '#FDE047',
-					400: '#FACC15',
-					500: '#EAB308',
-					600: '#CA8A04',
-					700: '#A16207',
-					800: '#854D0E',
-					900: '#713F12',
+					DEFAULT: '#F59E0B',
+					50: '#FFFBEB',
+					100: '#FEF3C7',
+					200: '#FDE68A',
+					300: '#FCD34D',
+					400: '#FBBF24',
+					500: '#F59E0B',
+					600: '#D97706',
+					700: '#B45309',
+					800: '#92400E',
+					900: '#78350F',
+				},
+				info: {
+					DEFAULT: '#3B82F6',
+					50: '#EFF6FF',
+					100: '#DBEAFE',
+					200: '#BFDBFE',
+					300: '#93C5FD',
+					400: '#60A5FA',
+					500: '#3B82F6',
+					600: '#2563EB',
+					700: '#1D4ED8',
+					800: '#1E40AF',
+					900: '#1E3A8A',
 				},
 				neutral: {
 					50: '#F9FAFB',
@@ -109,30 +111,20 @@ export default {
 					900: '#111827',
 				},
 				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					DEFAULT: '#EF4444',
+					foreground: '#FFFFFF'
 				},
 				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
+					DEFAULT: '#F9FAFB',
+					foreground: '#4B5563'
 				},
 				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))'
+					DEFAULT: '#FFFFFF',
+					foreground: '#1A1A1A'
 				},
 				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
-				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+					DEFAULT: '#FFFFFF',
+					foreground: '#1A1A1A'
 				}
 			},
 			borderRadius: {
