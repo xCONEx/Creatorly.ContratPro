@@ -2,16 +2,31 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Send } from 'lucide-react';
+import { Save, Send, Eye, Edit, Download, Trash2 } from 'lucide-react';
 
 interface ContractActionsProps {
   isLoading: boolean;
   isFormValid: boolean;
   onSaveDraft: (e: React.FormEvent) => void;
   onSendToClient: (e: React.FormEvent) => void;
+  onView?: () => void;
+  onEdit?: () => void;
+  onDownload?: () => void;
+  onDelete?: () => void;
+  showAllActions?: boolean;
 }
 
-const ContractActions = ({ isLoading, isFormValid, onSaveDraft, onSendToClient }: ContractActionsProps) => {
+const ContractActions = ({ 
+  isLoading, 
+  isFormValid, 
+  onSaveDraft, 
+  onSendToClient,
+  onView,
+  onEdit,
+  onDownload,
+  onDelete,
+  showAllActions = false
+}: ContractActionsProps) => {
   return (
     <Card>
       <CardHeader>
@@ -38,6 +53,64 @@ const ContractActions = ({ isLoading, isFormValid, onSaveDraft, onSendToClient }
           <Send className="w-4 h-4 mr-2" />
           {isLoading ? 'Enviando...' : 'Enviar para Cliente'}
         </Button>
+
+        {showAllActions && (
+          <>
+            <div className="border-t border-slate-200 my-3 pt-3">
+              <p className="text-sm text-slate-600 mb-3">Outras ações:</p>
+              
+              <div className="space-y-2">
+                {onView && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={onView}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Visualizar
+                  </Button>
+                )}
+
+                {onEdit && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={onEdit}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                )}
+
+                {onDownload && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={onDownload}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar PDF
+                  </Button>
+                )}
+
+                {onDelete && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </Button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
