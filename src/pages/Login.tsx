@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Mail, Lock, FileText, Shield, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,6 +14,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { signIn, signInWithGoogle, user, loading } = useAuth();
@@ -84,6 +86,13 @@ const Login = () => {
       });
       setIsLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    toast({
+      title: "Recuperação de senha",
+      description: "Funcionalidade em desenvolvimento",
+    });
   };
 
   // Mostrar loading enquanto verifica autenticação
@@ -206,6 +215,27 @@ const Login = () => {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={setRememberMe}
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="remember" className="text-sm text-slate-600 cursor-pointer">
+                    Lembrar-me
+                  </Label>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
               </div>
 
               <Button
