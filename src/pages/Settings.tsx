@@ -77,7 +77,7 @@ const Settings = () => {
           email: data.email || '',
           phone: data.phone || '',
           cpf_cnpj: data.cpf_cnpj || '',
-          user_type: data.user_type || 'pessoa_fisica',
+          user_type: (data.user_type as 'pessoa_fisica' | 'pessoa_juridica') || 'pessoa_fisica',
           address: data.address || ''
         });
       }
@@ -102,7 +102,7 @@ const Settings = () => {
           notifications_enabled: data.notifications_enabled ?? true,
           email_notifications: data.email_notifications ?? true,
           contract_reminders: data.contract_reminders ?? true,
-          theme: data.theme || 'light',
+          theme: (data.theme as 'light' | 'dark' | 'system') || 'light',
           language: data.language || 'pt-BR',
           timezone: data.timezone || 'America/Sao_Paulo'
         });

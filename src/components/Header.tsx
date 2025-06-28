@@ -73,7 +73,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           email: data.email || '',
           phone: data.phone || '',
           cpf_cnpj: data.cpf_cnpj || '',
-          user_type: data.user_type || 'pessoa_fisica',
+          user_type: (data.user_type as 'pessoa_fisica' | 'pessoa_juridica') || 'pessoa_fisica',
           address: data.address || ''
         });
       } else {

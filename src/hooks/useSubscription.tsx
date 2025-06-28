@@ -53,7 +53,18 @@ export const useSubscription = () => {
         .single();
 
       if (error) throw error;
-      setSubscription(data);
+      
+      // Transformar os dados para garantir que features seja string[]
+      const transformedData = {
+        ...data,
+        plan: {
+          ...data.plan,
+          features: Array.isArray(data.plan.features) ? data.plan.features : 
+                   typeof data.plan.features === 'string' ? JSON.parse(data.plan.features) : []
+        }
+      };
+      
+      setSubscription(transformedData);
     } catch (error) {
       console.error('Error fetching subscription:', error);
     }
@@ -67,7 +78,15 @@ export const useSubscription = () => {
         .order('price_monthly');
 
       if (error) throw error;
-      setPlans(data || []);
+      
+      // Transformar os dados para garantir que features seja string[]
+      const transformedPlans = (data || []).map(plan => ({
+        ...plan,
+        features: Array.isArray(plan.features) ? plan.features : 
+                 typeof plan.features === 'string' ? JSON.parse(plan.features) : []
+      }));
+      
+      setPlans(transformedPlans);
     } catch (error) {
       console.error('Error fetching plans:', error);
     } finally {

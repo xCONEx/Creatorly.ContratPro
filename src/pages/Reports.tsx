@@ -166,7 +166,7 @@ const Reports = () => {
 
     return Object.entries(statusCounts).map(([status, count]) => ({
       status: statusLabels[status] || status,
-      count,
+      count: count as number,
       color: statusColors[status] || '#64748b'
     }));
   };
