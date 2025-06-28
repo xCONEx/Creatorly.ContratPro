@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload } from 'lucide-react';
+import { Upload, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import TemplateSelector from './TemplateSelector';
 
 interface ContractContentProps {
   content: string;
@@ -13,6 +14,8 @@ interface ContractContentProps {
 }
 
 const ContractContent = ({ content, onContentChange }: ContractContentProps) => {
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -35,16 +38,53 @@ const ContractContent = ({ content, onContentChange }: ContractContentProps) => 
     }
   };
 
+  const handleTemplateSelect = (template: any) => {
+    const syntheticEvent = {
+      target: {
+        name: 'content',
+        value: template.content
+      }
+    } as React.ChangeEvent<HTMLTextAreaElement>;
+    onContentChange(syntheticEvent);
+    setShowTemplateSelector(false);
+    toast({
+      title: "Template aplicado",
+      description: `Template "${template.name}" foi adicionado ao contrato`,
+    });
+  };
+
+  if (showTemplateSelector) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <TemplateSelector
+            onSelect={handleTemplateSelect}
+            onClose={() => setShowTemplateSelector(false)}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Conteúdo do Contrato</CardTitle>
         <CardDescription>
-          Digite o texto do contrato ou faça upload de um arquivo
+          Digite o texto do contrato, use um template ou faça upload de um arquivo
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowTemplateSelector(true)}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Usar Template
+          </Button>
+          
           <input
             type="file"
             accept=".txt,.doc,.docx"
@@ -72,7 +112,7 @@ const ContractContent = ({ content, onContentChange }: ContractContentProps) => 
             name="content"
             value={content}
             onChange={onContentChange}
-            placeholder="Digite o conteúdo do contrato aqui..."
+            placeholder="Digite o conteúdo do contrato aqui ou use um template..."
             className="min-h-96"
             required
           />
