@@ -33,7 +33,7 @@ export const useFinanceFlowSync = () => {
     try {
       console.log('=== Starting FinanceFlow sync ===');
       console.log('User email:', user.email);
-      console.log('Supabase URL:', supabase.supabaseUrl);
+      console.log('Supabase URL configured');
       
       const { data, error } = await supabase.functions.invoke('sync-financeflow-plan', {
         body: { user_email: user.email }
@@ -44,10 +44,19 @@ export const useFinanceFlowSync = () => {
       if (error) {
         console.error('Sync function error:', error);
         
-        // Enhanced error handling
+        // Enhanced error handling for specific errors
         let userMessage = "Não foi possível conectar com o FinanceFlow";
         
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
+        if (error.message?.includes('Edge Function returned a non-2xx status code')) {
+          // Check if it's a 404 error (function not found)
+          if (error.message?.includes('404')) {
+            userMessage = "Função de sincronização não encontrada. Verifique se a função edge está implantada no Supabase.";
+          } else if (error.message?.includes('500')) {
+            userMessage = "Erro interno na sincronização. Verifique os logs da função edge no Supabase.";
+          } else {
+            userMessage = "Erro na função de sincronização. Verifique a configuração do Supabase.";
+          }
+        } else if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
           userMessage = "Erro de conexão com o servidor. Verifique sua internet e tente novamente.";
         } else if (error.message?.includes('timeout')) {
           userMessage = "Tempo limite esgotado. Tente novamente em alguns minutos.";
@@ -55,8 +64,6 @@ export const useFinanceFlowSync = () => {
           userMessage = "Erro de configuração do servidor. Entre em contato com o suporte.";
         } else if (error.message?.includes('credentials') || error.message?.includes('not configured')) {
           userMessage = "Configuração do FinanceFlow não encontrada. Entre em contato com o suporte.";
-        } else if (error.message?.includes('500')) {
-          userMessage = "Erro interno do servidor. Tente novamente em alguns minutos ou entre em contato com o suporte.";
         }
         
         toast({
