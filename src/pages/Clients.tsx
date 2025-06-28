@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -231,8 +230,8 @@ const Clients = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100">Clientes</h1>
-          <p className="text-slate-600 dark:text-slate-400">Gerencie seus clientes e suas informações</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Clientes</h1>
+          <p className="text-slate-600">Gerencie seus clientes e suas informações</p>
         </div>
         <Button 
           onClick={() => handleOpenDialog()}
@@ -263,10 +262,10 @@ const Clients = () => {
         {filteredClients.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-400 mb-2">
+            <h3 className="text-lg font-semibold text-slate-600 mb-2">
               {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
             </h3>
-            <p className="text-slate-500 dark:text-slate-400 mb-4">
+            <p className="text-slate-500 mb-4">
               {searchTerm 
                 ? 'Tente buscar por outros termos' 
                 : 'Adicione seu primeiro cliente para começar'}
@@ -311,7 +310,7 @@ const Clients = () => {
                         e.stopPropagation();
                         handleDelete(client.id);
                       }}
-                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950"
+                      className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -320,26 +319,26 @@ const Clients = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {client.email && (
-                  <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center space-x-2 text-sm text-slate-600">
                     <Mail className="w-4 h-4" />
                     <span className="truncate">{client.email}</span>
                   </div>
                 )}
                 {client.phone && (
-                  <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center space-x-2 text-sm text-slate-600">
                     <Phone className="w-4 h-4" />
                     <span>{client.phone}</span>
                   </div>
                 )}
                 {client.address && (
-                  <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center space-x-2 text-sm text-slate-600">
                     <MapPin className="w-4 h-4" />
                     <span className="line-clamp-2">{client.address}</span>
                   </div>
                 )}
                 
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-xs text-slate-500">
                     Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
