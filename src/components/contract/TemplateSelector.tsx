@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Plus, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { usePlanFeatures } from '@/hooks/usePlanFeatures';
+import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
 
 interface Template {
@@ -18,18 +18,6 @@ interface Template {
   created_by?: string;
 }
 
-interface DatabaseTemplate {
-  id: string;
-  name: string;
-  category: string;
-  content: string;
-  description: string;
-  is_default: boolean;
-  is_public: boolean;
-  created_at: string;
-  variables: any;
-}
-
 interface TemplateSelectorProps {
   onSelect: (template: Template) => void;
   onClose: () => void;
@@ -37,7 +25,7 @@ interface TemplateSelectorProps {
 
 const TemplateSelector = ({ onSelect, onClose }: TemplateSelectorProps) => {
   const { user } = useAuth();
-  const { hasFeature } = usePlanFeatures();
+  const { subscription } = useSubscription();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -150,22 +138,24 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
     try {
       let userTemplates: Template[] = [];
       if (user) {
-        const { data, error } = await supabase
+        // Simplified query without complex type inference
+        const { data: rawData, error } = await supabase
           .from('contract_templates')
-          .select('*')
+          .select('id, name, category, content')
           .eq('user_id', user.id);
 
         if (error) throw error;
         
-        // Convert database templates to our Template interface
-        userTemplates = (data as DatabaseTemplate[]).map(template => ({
-          id: template.id,
-          name: template.name,
-          category: template.category,
-          content: template.content,
-          is_premium: false, // User templates are not premium
-          created_by: user.id
-        }));
+        if (rawData) {
+          userTemplates = rawData.map((item) => ({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            content: item.content,
+            is_premium: false,
+            created_by: user.id
+          }));
+        }
       }
 
       const allTemplates = [...defaultTemplates, ...userTemplates];
@@ -197,7 +187,9 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
   });
 
   const handleSelectTemplate = (template: Template) => {
-    if (template.is_premium && !hasFeature('premiumTemplates')) {
+    const isFreePlan = subscription?.plan?.name === 'Gratuito' || !subscription;
+    
+    if (template.is_premium && isFreePlan) {
       toast({
         title: "Recurso Premium",
         description: "Este template está disponível apenas para planos Professional e Empresarial",
@@ -206,6 +198,11 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
       return;
     }
     onSelect(template);
+  };
+
+  const canCreateCustomTemplates = () => {
+    const planName = subscription?.plan?.name;
+    return planName === 'Profissional' || planName === 'Empresarial';
   };
 
   if (loading) {
@@ -271,7 +268,7 @@ Todo conteúdo criado será propriedade do CONTRATANTE após pagamento integral.
         ))}
       </div>
 
-      {hasFeature('customTemplates') && (
+      {canCreateCustomTemplates() && (
         <Card className="border-dashed border-2 border-slate-300">
           <CardContent className="flex flex-col items-center justify-center p-8 text-center">
             <Plus className="w-12 h-12 text-slate-400 mb-4" />
