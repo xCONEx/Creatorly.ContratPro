@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { FileText, User, Plus } from 'lucide-react';
 
 const Landing = () => {
   return (
@@ -8,7 +8,7 @@ const Landing = () => {
       <header className="w-full px-4 py-4 flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold">CP</span>
+            <FileText className="w-4 h-4 text-white" />
           </div>
           <span className="text-xl font-bold text-slate-800">ContratPro</span>
         </div>
@@ -16,15 +16,17 @@ const Landing = () => {
         <div className="flex items-center space-x-2 sm:space-x-4">
           <a
             href="/login"
-            className="px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base text-slate-600 hover:text-slate-800 font-medium transition-colors"
+            className="px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base text-slate-600 hover:text-slate-800 font-medium transition-colors flex items-center justify-center"
           >
-            Entrar
+            <User className="w-4 h-4 sm:hidden" />
+            <span className="hidden sm:inline">Entrar</span>
           </a>
           <a
             href="/register"
-            className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-medium transition-all shadow-lg hover:shadow-xl"
+            className="px-3 py-2 sm:px-6 sm:py-2 text-sm sm:text-base bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 font-medium transition-all shadow-lg hover:shadow-xl flex items-center justify-center"
           >
-            Começar Grátis
+            <Plus className="w-4 h-4 sm:hidden" />
+            <span className="hidden sm:inline">Começar Grátis</span>
           </a>
         </div>
       </header>
@@ -444,10 +446,10 @@ const Landing = () => {
       <footer className="bg-slate-900 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
+            <div className="text-center md:text-left">
+              <div className="flex items-center space-x-2 justify-center md:justify-start mb-4">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">CP</span>
+                  <FileText className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-xl font-bold">ContratPro</span>
               </div>
@@ -456,7 +458,7 @@ const Landing = () => {
               </p>
             </div>
             
-            <div>
+            <div className="text-center md:text-left">
               <h3 className="font-semibold mb-4">Recursos</h3>
               <ul className="space-y-2 text-slate-400">
                 <li><a href="#" className="hover:text-white transition-colors">Preços</a></li>
@@ -465,7 +467,7 @@ const Landing = () => {
               </ul>
             </div>
             
-            <div>
+            <div className="text-center md:text-left">
               <h3 className="font-semibold mb-4">Sobre</h3>
               <ul className="space-y-2 text-slate-400">
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
@@ -474,7 +476,7 @@ const Landing = () => {
               </ul>
             </div>
             
-            <div>
+            <div className="text-center md:text-left">
               <h3 className="font-semibold mb-4">Central de Ajuda</h3>
               <ul className="space-y-2 text-slate-400">
                 <li><a href="#" className="hover:text-white transition-colors">Documentação</a></li>
@@ -485,7 +487,7 @@ const Landing = () => {
           </div>
           
           <div className="border-t border-slate-800 mt-8 pt-8 text-center text-slate-400">
-            <p>&copy; 2024 ContratPro. Todos os direitos reservados.</p>
+            <p>&copy; 2025 ContratPro. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>
