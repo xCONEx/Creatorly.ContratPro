@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -210,6 +209,11 @@ export const useSubscription = () => {
     if (feature === 'contracts') {
       const limit = subscription.plan.max_contracts_per_month;
       
+      // Se limit é -1, significa ilimitado
+      if (limit === -1) {
+        return true;
+      }
+      
       if (contractCount >= limit) {
         toast({
           title: "Limite atingido",
@@ -232,12 +236,53 @@ export const useSubscription = () => {
     return true;
   };
 
+  // Função para verificar se tem acesso a uma feature específica
+  const hasFeatureAccess = (feature: string) => {
+    if (!subscription) return false;
+    
+    // Features específicas por plano
+    const planFeatures = {
+      'Gratuito': ['basic_templates', 'pdf_export', 'email_support'],
+      'Profissional': [
+        'basic_templates', 'pdf_export', 'email_support',
+        'premium_templates', 'electronic_signature', 'priority_support',
+        'basic_api', 'basic_reports', 'email_notifications',
+        'auto_backup', 'advanced_client_management', 'custom_templates'
+      ],
+      'Empresarial': [
+        'basic_templates', 'pdf_export', 'email_support',
+        'premium_templates', 'electronic_signature', 'priority_support',
+        'basic_api', 'basic_reports', 'email_notifications',
+        'auto_backup', 'advanced_client_management', 'custom_templates',
+        'unlimited_contracts', 'full_api', 'advanced_reports',
+        'analytics', 'support_24_7', 'admin_panel',
+        'advanced_integrations', 'zapier_integration', 'white_label',
+        'full_backup', 'multi_user', 'advanced_signature',
+        'automations', 'multi_format_export', 'compliance', 'sso'
+      ]
+    };
+    
+    const features = planFeatures[subscription.plan.name as keyof typeof planFeatures] || [];
+    return features.includes(feature);
+  };
+
+  // Função para obter limite de contratos formatado
+  const getContractLimitText = () => {
+    if (!subscription) return 'N/A';
+    
+    const limit = subscription.plan.max_contracts_per_month;
+    if (limit === -1) return 'Ilimitado';
+    return `${contractCount}/${limit}`;
+  };
+
   return {
     subscription,
     plans,
     loading,
     contractCount,
     checkPlanLimit,
+    hasFeatureAccess,
+    getContractLimitText,
     refetch: () => {
       console.log('Refetching subscription data...');
       if (user) {
