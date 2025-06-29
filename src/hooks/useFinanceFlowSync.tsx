@@ -10,6 +10,7 @@ interface SyncResult {
   original_plan?: string;
   mapped_plan?: string;
   clients_synced?: number;
+  contracts_synced?: number;
   synced_at?: string;
   error?: string;
   message?: string;
@@ -106,12 +107,16 @@ export const useFinanceFlowSync = () => {
         setLastSync(new Date().toISOString());
         
         const clientsMessage = result.clients_synced && result.clients_synced > 0 
-          ? ` e ${result.clients_synced} cliente${result.clients_synced > 1 ? 's' : ''} sincronizado${result.clients_synced > 1 ? 's' : ''}`
+          ? ` ${result.clients_synced} cliente${result.clients_synced > 1 ? 's' : ''} sincronizado${result.clients_synced > 1 ? 's' : ''}`
+          : '';
+          
+        const contractsMessage = result.contracts_synced && result.contracts_synced > 0 
+          ? ` e ${result.contracts_synced} contrato${result.contracts_synced > 1 ? 's' : ''} sincronizado${result.contracts_synced > 1 ? 's' : ''}`
           : '';
         
         toast({
           title: "Sincronização concluída!",
-          description: `Plano atualizado para: ${result.mapped_plan}${clientsMessage}`,
+          description: `Plano atualizado para: ${result.mapped_plan}.${clientsMessage}${contractsMessage}`,
         });
         
         // Force refresh of data
