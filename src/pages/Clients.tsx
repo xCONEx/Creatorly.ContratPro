@@ -3,14 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, MapPin, X, RefreshCw } from 'lucide-react';
+import { Plus, Search, Users, Mail, Phone, MapPin, FileText, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import ClientDetailModal from '@/components/client/ClientDetailModal';
 import ClientsDebugInfo from '@/components/ClientsDebugInfo';
+import FinanceFlowDebug from '@/components/FinanceFlowDebug';
 
 interface Client {
   id: string;
@@ -19,9 +21,9 @@ interface Client {
   phone?: string;
   address?: string;
   cnpj?: string;
-  cpf_cnpj?: string;
+  description?: string;
   created_at: string;
-  user_id: string;
+  updated_at: string;
 }
 
 const Clients = () => {
@@ -29,18 +31,17 @@ const Clients = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     address: '',
-    cpf_cnpj: ''
+    cnpj: '',
+    description: ''
   });
 
   useEffect(() => {
@@ -51,10 +52,10 @@ const Clients = () => {
 
   useEffect(() => {
     const filtered = clients.filter(client =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.cpf_cnpj?.includes(searchTerm) ||
-      client.cnpj?.includes(searchTerm) || ''
+      client.phone?.includes(searchTerm) ||
+      client.cnpj?.includes(searchTerm)
     );
     setFilteredClients(filtered);
   }, [clients, searchTerm]);
@@ -115,51 +116,53 @@ const Clients = () => {
       });
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
   const handleRefresh = async () => {
-    setIsRefreshing(true);
+    setIsLoading(true);
     await fetchClients(true);
   };
 
   const handleClientClick = (client: Client) => {
-    setViewingClient(client);
+    setSelectedClient(client);
   };
 
   const handleOpenDialog = (client?: Client) => {
     if (client) {
-      setEditingClient(client);
+      setSelectedClient(client);
       setFormData({
         name: client.name,
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
-        cpf_cnpj: client.cpf_cnpj || client.cnpj || ''
+        cnpj: client.cnpj || '',
+        description: client.description || ''
       });
     } else {
-      setEditingClient(null);
+      setSelectedClient(null);
       setFormData({
         name: '',
         email: '',
         phone: '',
         address: '',
-        cpf_cnpj: ''
+        cnpj: '',
+        description: ''
       });
     }
-    setIsDialogOpen(true);
+    setIsModalOpen(true);
   };
 
   const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setEditingClient(null);
+    setIsModalOpen(false);
+    setSelectedClient(null);
     setFormData({
       name: '',
       email: '',
       phone: '',
       address: '',
-      cpf_cnpj: ''
+      cnpj: '',
+      description: ''
     });
   };
 
@@ -172,7 +175,7 @@ const Clients = () => {
     e.preventDefault();
     if (!user) return;
 
-    setIsSubmitting(true);
+    setIsLoading(true);
 
     try {
       const clientData = {
@@ -181,17 +184,17 @@ const Clients = () => {
         email: formData.email || null,
         phone: formData.phone || null,
         address: formData.address || null,
-        cnpj: formData.cpf_cnpj || null,
-        cpf_cnpj: formData.cpf_cnpj || null,
+        cnpj: formData.cnpj || null,
+        description: formData.description || null,
       };
 
       console.log('Saving client data:', clientData);
 
-      if (editingClient) {
+      if (selectedClient) {
         const { error } = await supabase
           .from('clients')
           .update(clientData)
-          .eq('id', editingClient.id)
+          .eq('id', selectedClient.id)
           .eq('user_id', user.id);
 
         if (error) throw error;
@@ -224,7 +227,7 @@ const Clients = () => {
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -268,59 +271,130 @@ const Clients = () => {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Debug Info - só aparece em desenvolvimento */}
-      <ClientsDebugInfo />
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Clientes</h1>
-          <p className="text-slate-600">Gerencie seus clientes e suas informações</p>
-          <p className="text-sm text-slate-500 mt-1">
-            Total: {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            variant="outline"
-            className="w-full sm:w-auto"
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
-          </Button>
-          <Button 
-            onClick={() => handleOpenDialog()}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full sm:w-auto"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Cliente
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
+        <p className="text-muted-foreground">Gerencie seus clientes e informações de contato</p>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              placeholder="Buscar clientes por nome, email ou CPF/CNPJ..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Debug Components */}
+      <FinanceFlowDebug />
+      <ClientsDebugInfo />
+
+      {/* Search and Add Client */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar clientes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogTrigger asChild>
+            <Button className="gradient-primary text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Cliente
+            </Button>
+          </DialogTrigger>
+          
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedClient ? 'Editar Cliente' : 'Novo Cliente'}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedClient 
+                  ? 'Atualize as informações do cliente' 
+                  : 'Preencha os dados do novo cliente'}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Nome completo"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cnpj">CPF/CNPJ</Label>
+                <Input
+                  id="cnpj"
+                  name="cnpj"
+                  value={formData.cnpj}
+                  onChange={handleInputChange}
+                  placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Descrição do cliente"
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseDialog}
+                  disabled={isLoading}
+                  className="w-full sm:w-auto"
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+                  {isLoading ? 'Salvando...' : selectedClient ? 'Atualizar' : 'Criar'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Clients List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
         {filteredClients.length === 0 ? (
           <div className="col-span-full text-center py-12">
-            <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-slate-600 mb-2">
               {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
             </h3>
@@ -415,101 +489,11 @@ const Clients = () => {
         )}
       </div>
 
-      {/* Dialog - Form */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingClient 
-                ? 'Atualize as informações do cliente' 
-                : 'Preencha os dados do novo cliente'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome *</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Nome completo"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="email@exemplo.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cpf_cnpj">CPF/CNPJ</Label>
-              <Input
-                id="cpf_cnpj"
-                name="cpf_cnpj"
-                value={formData.cpf_cnpj}
-                onChange={handleInputChange}
-                placeholder="000.000.000-00 ou 00.000.000/0001-00"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
-              <Input
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                placeholder="Endereço completo"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseDialog}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto"
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-                {isSubmitting ? 'Salvando...' : editingClient ? 'Atualizar' : 'Criar'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Client Detail Modal */}
       <ClientDetailModal
-        client={viewingClient}
-        isOpen={!!viewingClient}
-        onClose={() => setViewingClient(null)}
+        client={selectedClient}
+        isOpen={!!selectedClient}
+        onClose={() => setSelectedClient(null)}
       />
     </div>
   );
