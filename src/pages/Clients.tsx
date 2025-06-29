@@ -11,7 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import ClientDetailModal from '@/components/client/ClientDetailModal';
-import ClientsDebugInfo from '@/components/ClientsDebugInfo';
 import FinanceFlowDebug from '@/components/FinanceFlowDebug';
 
 interface Client {
