@@ -47,24 +47,29 @@ export const useFinanceFlowSync = () => {
         console.error('Error details:', {
           message: error.message,
           name: error.name,
-          stack: error.stack
+          stack: error.stack,
+          context: error.context || 'No context available'
         });
         
         // Enhanced error handling for specific errors
         let userMessage = "Não foi possível conectar com o FinanceFlow";
         
         if (error.message?.includes('Edge Function returned a non-2xx status code')) {
-          // Check if it's a 404 error (function not found)
+          // Try to get more details from the response
+          if (error.context?.response) {
+            try {
+              const errorResponse = await error.context.response.json();
+              console.error('Detailed error response:', errorResponse);
+              userMessage = errorResponse.error || "Erro interno na função de sincronização";
+            } catch (e) {
+              console.error('Could not parse error response:', e);
+            }
+          }
+          
           if (error.message?.includes('404')) {
             userMessage = "Função 'sync-financeflow-plan' não encontrada no Supabase. Verifique se foi deployada corretamente.";
-            console.error('404 Error - Function not found. Please check:');
-            console.error('1. Function deployment: supabase functions deploy sync-financeflow-plan');
-            console.error('2. Function name consistency');
-            console.error('3. Supabase project configuration');
           } else if (error.message?.includes('500')) {
-            userMessage = "Erro interno na função de sincronização. Verifique os logs no Supabase Dashboard.";
-          } else {
-            userMessage = "Erro na função de sincronização. Status code não 2xx recebido.";
+            userMessage = "Erro interno na função de sincronização. Verifique os logs no Supabase Dashboard para mais detalhes.";
           }
         } else if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
           userMessage = "Erro de conexão com o servidor. Verifique sua internet e tente novamente.";
@@ -86,7 +91,11 @@ export const useFinanceFlowSync = () => {
           success: false, 
           sync_status: 'failed', 
           error: error.message,
-          details: JSON.stringify(error)
+          details: JSON.stringify({
+            error: error,
+            context: error.context || 'No context',
+            timestamp: new Date().toISOString()
+          })
         };
       }
 
