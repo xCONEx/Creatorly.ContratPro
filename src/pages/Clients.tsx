@@ -13,7 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import ClientDetailModal from '@/components/client/ClientDetailModal';
 import ClientsDebugInfo from '@/components/ClientsDebugInfo';
 import FinanceFlowDebug from '@/components/FinanceFlowDebug';
-
+ 
 interface Client {
   id: string;
   name: string;
