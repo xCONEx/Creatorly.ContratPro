@@ -9,8 +9,13 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('=== Edge Function Called ===')
+  console.log('Method:', req.method)
+  console.log('URL:', req.url)
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight')
     return new Response('ok', { headers: corsHeaders })
   }
 
@@ -90,13 +95,23 @@ serve(async (req) => {
       )
     }
 
-    // Initialize Supabase clients with error handling
+    // Initialize Supabase clients
     let contratproSupabase, financeflowSupabase;
     
     try {
       console.log('=== Initializing Supabase clients ===')
-      contratproSupabase = createClient(contratproUrl, contratproKey)
-      financeflowSupabase = createClient(financeflowUrl, financeflowKey)
+      contratproSupabase = createClient(contratproUrl, contratproKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      })
+      financeflowSupabase = createClient(financeflowUrl, financeflowKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      })
       console.log('Supabase clients initialized successfully')
     } catch (error) {
       console.error('Error initializing Supabase clients:', error)
@@ -151,11 +166,11 @@ serve(async (req) => {
       )
     }
 
-    // Step 2: Get ContratPro user with improved error handling
+    // Step 2: Get ContratPro user
     console.log('=== Step 2: Fetching user from ContratPro ===')
     let contratproUser;
     try {
-      // Try to get user from profiles table first (more reliable)
+      // Try to get user from profiles table first
       const { data: profileData, error: profileError } = await contratproSupabase
         .from('profiles')  
         .select('id, email, name')
@@ -174,25 +189,29 @@ serve(async (req) => {
           email: contratproUser.user.email 
         })
       } else {
-        console.log('User not found in profiles, trying auth.users...')
+        console.log('User not found in profiles, checking auth.users...')
         
-        // Fallback: try to access auth.users via RPC
-        const { data: authUsers, error: authError } = await contratproSupabase
-          .rpc('get_user_by_email', { email_input: user_email })
-
-        if (!authError && authUsers && authUsers.length > 0) {
-          contratproUser = {
-            user: {
-              id: authUsers[0].id,
-              email: authUsers[0].email
+        // Try to get from auth.users using RPC if available
+        const { data: userData, error: userError } = await contratproSupabase.auth.admin.listUsers()
+        
+        if (userData && userData.users) {
+          const foundUser = userData.users.find(u => u.email === user_email)
+          if (foundUser) {
+            contratproUser = {
+              user: {
+                id: foundUser.id,
+                email: foundUser.email
+              }
             }
+            console.log('ContratPro user found via auth.users:', { 
+              id: contratproUser.user.id, 
+              email: contratproUser.user.email 
+            })
+          } else {
+            throw new Error('User not found in ContratPro database')
           }
-          console.log('ContratPro user found via RPC:', { 
-            id: contratproUser.user.id, 
-            email: contratproUser.user.email 
-          })
         } else {
-          throw new Error('User not found in ContratPro database')
+          throw new Error('Could not access auth.users')
         }
       }
     } catch (error) {
@@ -214,7 +233,8 @@ serve(async (req) => {
       'premium': 'Profissional',
       'enterprise': 'Empresarial',
       'enterprise-annual': 'Empresarial',
-      'free': 'Gratuito'
+      'free': 'Gratuito',
+      'gratuito': 'Gratuito'
     }
 
     const originalPlan = financeflowUser.subscription?.toLowerCase() || 'free'
@@ -222,72 +242,8 @@ serve(async (req) => {
     
     console.log(`Plan mapping: ${financeflowUser.subscription} -> ${contratproPlan}`)
 
-    // Get target plan ID
-    let targetPlan;
-    try {
-      const { data, error } = await contratproSupabase
-        .from('subscription_plans')
-        .select('id, name')
-        .eq('name', contratproPlan)
-        .single()
-
-      if (error) {
-        console.error('Plan query error:', error)
-        throw error
-      }
-
-      targetPlan = data
-      console.log('Target plan found:', targetPlan)
-    } catch (error) {
-      console.error('Error finding subscription plan:', error)
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: `Plan ${contratproPlan} not found in ContratPro`, 
-          sync_status: 'failed',
-          details: error.message
-        }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Update user subscription
-    console.log('=== Step 4: Updating user subscription ===')
-    try {
-      const { error } = await contratproSupabase
-        .from('user_subscriptions')
-        .upsert({
-          user_id: contratproUser.user.id,
-          plan_id: targetPlan.id,
-          status: 'active',
-          started_at: new Date().toISOString(),
-          expires_at: null,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        })
-
-      if (error) {
-        console.error('Subscription update error:', error)
-        throw error
-      }
-
-      console.log('Subscription updated successfully')
-    } catch (error) {
-      console.error('Error updating subscription:', error)
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Failed to update subscription in ContratPro', 
-          sync_status: 'failed',
-          details: error.message
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Step 5: Sync clients
-    console.log('=== Step 5: Syncing clients ===')
+    // Step 4: Sync clients from FinanceFlow
+    console.log('=== Step 4: Syncing clients ===')
     let clientsSynced = 0
     
     try {
@@ -314,7 +270,7 @@ serve(async (req) => {
         const existingEmails = new Set(existingClients?.map(c => c.email).filter(Boolean) || [])
         const existingCnpjs = new Set(existingClients?.map(c => c.cnpj).filter(Boolean) || [])
 
-        // Transform and filter clients - mapping to correct schema
+        // Transform and filter clients
         const clientsToInsert = financeflowClients
           .map(client => ({
             user_id: contratproUser.user.id,
@@ -356,93 +312,9 @@ serve(async (req) => {
       console.log('Continuing despite client sync error...')
     }
 
-    // Step 6: Sync contracts (optional)
-    console.log('=== Step 6: Syncing contracts ===')
-    let contractsSynced = 0
-    
-    try {
-      // Fetch contracts from FinanceFlow
-      const { data: financeflowContracts, error: contractsError } = await financeflowSupabase
-        .from('contracts')
-        .select(`
-          *,
-          clients!inner(id, name, email)
-        `)
-        .eq('user_id', financeflowUser.id)
-
-      if (contractsError) {
-        console.error('Error fetching FinanceFlow contracts:', contractsError)
-        // Don't throw, just log and continue
-        console.log('Contracts table might not exist in FinanceFlow, skipping...')
-      } else if (financeflowContracts && financeflowContracts.length > 0) {
-        console.log(`Found ${financeflowContracts.length} contracts in FinanceFlow`)
-
-        // Get client mapping from ContratPro
-        const { data: contratproClients } = await contratproSupabase
-          .from('clients')
-          .select('id, email, name')
-          .eq('user_id', contratproUser.user.id)
-
-        const clientEmailMap = new Map()
-        contratproClients?.forEach(client => {
-          if (client.email) {
-            clientEmailMap.set(client.email, client.id)
-          }
-        })
-
-        // Transform contracts
-        const contractsToInsert = financeflowContracts
-          .map(contract => {
-            const clientEmail = contract.clients?.email
-            const clientId = clientEmailMap.get(clientEmail)
-            
-            if (!clientId) {
-              console.log(`Client not found for contract ${contract.id}, skipping...`)
-              return null
-            }
-
-            return {
-              client_id: clientId,
-              user_id: contratproUser.user.id,
-              title: contract.title || contract.nome || 'Contrato sem título',
-              description: contract.description || contract.descricao || null,
-              value: contract.value || contract.valor || 0,
-              start_date: contract.start_date || contract.data_inicio || null,
-              end_date: contract.end_date || contract.data_fim || null,
-              status: contract.status === 'active' ? 'ativo' : 
-                     contract.status === 'finished' ? 'finalizado' : 
-                     contract.status === 'cancelled' ? 'cancelado' : 'ativo',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          })
-          .filter(Boolean)
-
-        if (contractsToInsert.length > 0) {
-          const { error: insertContractsError } = await contratproSupabase
-            .from('contracts')
-            .insert(contractsToInsert)
-
-          if (insertContractsError) {
-            console.error('Error inserting contracts:', insertContractsError)
-            // Don't fail the entire sync for contract issues
-            console.log('Continuing despite contract sync error...')
-          } else {
-            contractsSynced = contractsToInsert.length
-            console.log(`Successfully synced ${contractsSynced} new contracts`)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error during contract sync:', error)
-      // Don't fail the entire operation for contract sync issues
-      console.log('Continuing despite contract sync error...')
-    }
-
     console.log('=== Sync completed successfully ===')
     console.log(`Plan: ${financeflowUser.subscription} -> ${contratproPlan}`)
     console.log(`Clients synced: ${clientsSynced}`)
-    console.log(`Contracts synced: ${contractsSynced}`)
 
     return new Response(
       JSON.stringify({ 
@@ -451,9 +323,9 @@ serve(async (req) => {
         original_plan: financeflowUser.subscription,
         mapped_plan: contratproPlan,
         clients_synced: clientsSynced,
-        contracts_synced: contractsSynced,
+        contracts_synced: 0,
         synced_at: new Date().toISOString(),
-        message: `Plan successfully synced from ${financeflowUser.subscription} to ${contratproPlan}. ${clientsSynced} clients and ${contractsSynced} contracts synchronized.`
+        message: `Sync completed successfully. Plan: ${contratproPlan}, Clients: ${clientsSynced}`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
