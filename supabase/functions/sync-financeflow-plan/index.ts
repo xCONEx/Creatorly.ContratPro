@@ -31,7 +31,7 @@ serve(async (req) => {
   try {
     console.log('=== Starting sync function ===')
 
-    // Parse request body with better error handling
+    // Parse request body
     let requestBody;
     try {
       const rawBody = await req.text()
@@ -57,7 +57,7 @@ serve(async (req) => {
       )
     }
 
-    // Get environment variables with detailed logging
+    // Get environment variables
     const contratproUrl = Deno.env.get('CONTRATPRO_SUPABASE_URL');
     const contratproKey = Deno.env.get('CONTRATPRO_SUPABASE_KEY');
     const financeflowUrl = Deno.env.get('FINANCEFLOW_SUPABASE_URL');
@@ -69,26 +69,25 @@ serve(async (req) => {
     console.log('FINANCEFLOW_SUPABASE_URL:', financeflowUrl ? `Set (${financeflowUrl.substring(0, 20)}...)` : 'MISSING')
     console.log('FINANCEFLOW_SUPABASE_KEY:', financeflowKey ? 'Set (hidden)' : 'MISSING')
 
-    // Check ContratPro credentials
+    // Check credentials
     if (!contratproUrl || !contratproKey) {
       console.error('Missing ContratPro Supabase credentials')
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'ContratPro database not configured. Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY', 
+          error: 'ContratPro database not configured', 
           sync_status: 'failed' 
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Check FinanceFlow credentials
     if (!financeflowUrl || !financeflowKey) {
       console.error('Missing FinanceFlow Supabase credentials')
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'FinanceFlow connection not configured. Please add FINANCEFLOW_SUPABASE_URL and FINANCEFLOW_SUPABASE_KEY to Supabase Secrets.', 
+          error: 'FinanceFlow connection not configured', 
           sync_status: 'failed' 
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -191,7 +190,6 @@ serve(async (req) => {
       } else {
         console.log('User not found in profiles, checking auth.users...')
         
-        // Try to get from auth.users using RPC if available
         const { data: userData, error: userError } = await contratproSupabase.auth.admin.listUsers()
         
         if (userData && userData.users) {
@@ -248,6 +246,7 @@ serve(async (req) => {
     
     try {
       // Fetch clients from FinanceFlow
+      console.log('Fetching clients from FinanceFlow for user:', financeflowUser.id)
       const { data: financeflowClients, error: clientsError } = await financeflowSupabase
         .from('clients')
         .select('*')
@@ -259,56 +258,93 @@ serve(async (req) => {
       }
 
       console.log(`Found ${financeflowClients?.length || 0} clients in FinanceFlow`)
-
+      
       if (financeflowClients && financeflowClients.length > 0) {
+        console.log('Sample client data:', financeflowClients[0])
+        
         // Get existing clients to avoid duplicates
         const { data: existingClients } = await contratproSupabase
           .from('clients')
-          .select('email, cnpj')
+          .select('email, cnpj, name')
           .eq('user_id', contratproUser.user.id)
+
+        console.log(`Found ${existingClients?.length || 0} existing clients in ContratPro`)
 
         const existingEmails = new Set(existingClients?.map(c => c.email).filter(Boolean) || [])
         const existingCnpjs = new Set(existingClients?.map(c => c.cnpj).filter(Boolean) || [])
+        const existingNames = new Set(existingClients?.map(c => c.name).filter(Boolean) || [])
 
         // Transform and filter clients
         const clientsToInsert = financeflowClients
-          .map(client => ({
-            user_id: contratproUser.user.id,
-            name: client.name || 'Cliente sem nome',
-            email: client.email || null,
-            phone: client.phone || client.telefone || null,
-            address: client.address || client.endereco || null,
-            cnpj: client.cnpj || client.cpf_cnpj || client.document || null,
-            description: client.description || client.observacoes || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }))
+          .map(client => {
+            console.log('Processing client:', client.name || 'No name')
+            return {
+              user_id: contratproUser.user.id,
+              name: client.name || client.nome || 'Cliente sem nome',
+              email: client.email || null,
+              phone: client.phone || client.telefone || client.celular || null,
+              address: client.address || client.endereco || null,
+              cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf || null,
+              description: client.description || client.observacoes || client.obs || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          })
           .filter(client => {
-            // Avoid duplicates by email or CNPJ
-            if (client.email && existingEmails.has(client.email)) return false
-            if (client.cnpj && existingCnpjs.has(client.cnpj)) return false
+            // Avoid duplicates by name, email or CNPJ
+            if (existingNames.has(client.name)) {
+              console.log(`Skipping duplicate client by name: ${client.name}`)
+              return false
+            }
+            if (client.email && existingEmails.has(client.email)) {
+              console.log(`Skipping duplicate client by email: ${client.email}`)
+              return false
+            }
+            if (client.cnpj && existingCnpjs.has(client.cnpj)) {
+              console.log(`Skipping duplicate client by CNPJ: ${client.cnpj}`)
+              return false
+            }
             return true
           })
 
+        console.log(`Clients to insert: ${clientsToInsert.length}`)
+
         if (clientsToInsert.length > 0) {
-          const { error: insertError } = await contratproSupabase
+          console.log('Inserting clients:', clientsToInsert.map(c => ({ name: c.name, email: c.email })))
+          
+          const { data: insertData, error: insertError } = await contratproSupabase
             .from('clients')
             .insert(clientsToInsert)
+            .select()
 
           if (insertError) {
             console.error('Error inserting clients:', insertError)
+            console.error('Insert error details:', {
+              message: insertError.message,
+              details: insertError.details,
+              hint: insertError.hint,
+              code: insertError.code
+            })
             throw insertError
           }
 
           clientsSynced = clientsToInsert.length
           console.log(`Successfully synced ${clientsSynced} new clients`)
+          console.log('Inserted clients:', insertData)
         } else {
           console.log('No new clients to sync (all already exist)')
         }
+      } else {
+        console.log('No clients found in FinanceFlow')
       }
     } catch (error) {
       console.error('Error during client sync:', error)
-      // Don't fail the entire operation for client sync issues
+      console.error('Client sync error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      })
+      // Don't fail the entire operation for client sync issues, but log the error
       console.log('Continuing despite client sync error...')
     }
 
