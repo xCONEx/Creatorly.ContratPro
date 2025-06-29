@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -15,19 +14,18 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
   try {
     // Primeiro, testar conexão com FinanceFlow
     console.log('=== Testando conexão com FinanceFlow ===');
-    const { data: testConnection, error: testError } = await financeflowSupabase
+    const { count, error: testError } = await financeflowSupabase
       .from('clients')
-      .select('count', { count: 'exact' })
-      .limit(1);
+      .select('*', { count: 'exact', head: true });
     
     if (testError) {
       console.error('Erro de conexão com FinanceFlow:', testError);
       throw new Error(`Conexão com FinanceFlow falhou: ${testError.message}`);
     }
     
-    console.log('Conexão com FinanceFlow estabelecida com sucesso');
+    console.log(`Conexão com FinanceFlow estabelecida. Total de clientes na base: ${count}`);
     
-    // Buscar TODOS os clientes primeiro para debug
+    // Se for ação de fetch_clients, buscar TODOS os clientes primeiro para debug
     console.log('=== Debug: Buscando TODOS os clientes do FinanceFlow ===');
     const { data: allClientsData, error: allClientsError } = await financeflowSupabase
       .from('clients')
@@ -36,50 +34,26 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
         user_id,
         user_email,
         name,
-        nome,
         email,
         phone,
-        telefone,
-        celular,
         address,
-        endereco,
         cnpj,
         cpf_cnpj,
-        cpf,
-        document,
         description,
-        observacoes,
-        obs,
         created_at,
         updated_at
       `)
-      .limit(10);
+      .limit(5);
     
     if (allClientsError) {
       console.error('Erro ao buscar todos os clientes:', allClientsError);
     } else {
-      console.log(`Total de clientes encontrados na base FinanceFlow: ${allClientsData?.length || 0}`);
-      if (allClientsData && allClientsData.length > 0) {
-        console.log('Exemplo de cliente na base:', {
-          id: allClientsData[0].id,
-          user_email: allClientsData[0].user_email,
-          name: allClientsData[0].name || allClientsData[0].nome,
-          email: allClientsData[0].email
-        });
-        
-        // Verificar se existem clientes com o user_email procurado
-        const clientsWithEmail = allClientsData.filter(client => client.user_email === userEmail);
-        console.log(`Clientes encontrados com user_email ${userEmail}: ${clientsWithEmail.length}`);
-        
-        if (clientsWithEmail.length === 0) {
-          // Buscar clientes com emails similares para debug
-          const similarEmails = allClientsData
-            .filter(client => client.user_email && client.user_email.includes('@'))
-            .map(client => client.user_email)
-            .slice(0, 5);
-          console.log('Emails encontrados na base (primeiros 5):', similarEmails);
-        }
-      }
+      console.log(`Primeiros 5 clientes na base FinanceFlow:`, allClientsData?.map(c => ({
+        id: c.id,
+        name: c.name,
+        user_email: c.user_email,
+        email: c.email
+      })));
     }
     
     // Agora buscar clientes usando user_email diretamente
@@ -91,20 +65,12 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
         user_id,
         user_email,
         name,
-        nome,
         email,
         phone,
-        telefone,
-        celular,
         address,
-        endereco,
         cnpj,
         cpf_cnpj,
-        cpf,
-        document,
         description,
-        observacoes,
-        obs,
         created_at,
         updated_at
       `)
@@ -121,18 +87,27 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
     if (clientsData && clientsData.length > 0) {
       console.log('Clientes encontrados:', clientsData.map(client => ({
         id: client.id,
-        name: client.name || client.nome,
+        name: client.name,
         email: client.email,
         user_email: client.user_email,
-        phone: client.phone || client.telefone || client.celular,
-        cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf
+        phone: client.phone,
+        cnpj: client.cnpj || client.cpf_cnpj
       })));
     } else {
       console.log('ATENÇÃO: Nenhum cliente encontrado para este user_email no FinanceFlow');
-      console.log('Verificar se:');
+      console.log('Verificações necessárias:');
       console.log('1. O user_email está correto:', userEmail);
-      console.log('2. Existem clientes cadastrados no FinanceFlow com este email');
+      console.log('2. Existem clientes cadastrados no FinanceFlow com este email no campo user_email');
       console.log('3. O campo user_email está preenchido na tabela clients do FinanceFlow');
+      
+      // Verificar se existem clientes com emails similares
+      if (allClientsData && allClientsData.length > 0) {
+        const emailsFound = allClientsData
+          .filter(client => client.user_email)
+          .map(client => client.user_email)
+          .slice(0, 3);
+        console.log('Exemplos de user_emails encontrados na base:', emailsFound);
+      }
     }
 
     return clientsData || [];
@@ -198,9 +173,9 @@ serve(async (req) => {
     const financeflowKey = Deno.env.get('FINANCEFLOW_SUPABASE_KEY');
 
     console.log('=== Environment Variables Check ===')
-    console.log('SUPABASE_URL:', contratproUrl ? `Set (${contratproUrl.substring(0, 20)}...)` : 'MISSING')
+    console.log('SUPABASE_URL:', contratproUrl ? `Set (${contratproUrl.substring(0, 30)}...)` : 'MISSING')
     console.log('SUPABASE_SERVICE_ROLE_KEY:', contratproKey ? 'Set (hidden)' : 'MISSING')
-    console.log('FINANCEFLOW_SUPABASE_URL:', financeflowUrl ? `Set (${financeflowUrl.substring(0, 20)}...)` : 'MISSING')
+    console.log('FINANCEFLOW_SUPABASE_URL:', financeflowUrl ? `Set (${financeflowUrl.substring(0, 30)}...)` : 'MISSING')
     console.log('FINANCEFLOW_SUPABASE_KEY:', financeflowKey ? 'Set (hidden)' : 'MISSING')
 
     // Check credentials
@@ -259,6 +234,37 @@ serve(async (req) => {
       )
     }
 
+    // Se a ação for apenas buscar clientes, retornar apenas os clientes
+    if (action === 'fetch_clients') {
+      console.log('=== Ação: Buscar apenas clientes ===')
+      try {
+        const clients = await fetchFinanceFlowClientsByUserEmail(financeflowSupabase, user_email);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            action: 'fetch_clients',
+            user_email: user_email,
+            clients: clients,
+            clients_count: clients.length,
+            timestamp: new Date().toISOString()
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('Erro ao buscar clientes:', error)
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'Erro ao buscar clientes do FinanceFlow',
+            details: error.message,
+            timestamp: new Date().toISOString()
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+
     // Step 1: Fetch user from FinanceFlow
     console.log('=== Step 1: Fetching user from FinanceFlow ===')
     let financeflowUser;
@@ -297,37 +303,6 @@ serve(async (req) => {
         }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
-    }
-
-    // Se a ação for apenas buscar clientes, retornar apenas os clientes
-    if (action === 'fetch_clients') {
-      console.log('=== Ação: Buscar apenas clientes ===')
-      try {
-        const clients = await fetchFinanceFlowClientsByUserEmail(financeflowSupabase, user_email);
-        
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            action: 'fetch_clients',
-            user_email: user_email,
-            clients: clients,
-            clients_count: clients.length,
-            timestamp: new Date().toISOString()
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      } catch (error) {
-        console.error('Erro ao buscar clientes:', error)
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'Erro ao buscar clientes do FinanceFlow',
-            details: error.message,
-            timestamp: new Date().toISOString()
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
     }
 
     // Step 2: Get ContratPro user
@@ -435,22 +410,22 @@ serve(async (req) => {
         const clientsToInsert = financeflowClients
           .map(client => {
             console.log('Processing FinanceFlow client:', {
-              name: client.name || client.nome,
+              name: client.name,
               email: client.email,
-              phone: client.phone || client.telefone || client.celular,
-              cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf,
+              phone: client.phone,
+              cnpj: client.cnpj || client.cpf_cnpj,
               user_email: client.user_email
             })
             
             return {
               user_id: contratproUser.user.id,
               company_id: null, // Não temos company_id no FinanceFlow
-              name: client.name || client.nome || 'Cliente sem nome',
-              phone: client.phone || client.telefone || client.celular || null,
+              name: client.name || 'Cliente sem nome',
+              phone: client.phone || null,
               email: client.email || null,
-              address: client.address || client.endereco || null,
-              cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf || null,
-              description: client.description || client.observacoes || client.obs || null,
+              address: client.address || null,
+              cnpj: client.cnpj || client.cpf_cnpj || null,
+              description: client.description || null,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }
