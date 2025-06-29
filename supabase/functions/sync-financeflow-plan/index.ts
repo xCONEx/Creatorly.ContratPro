@@ -57,7 +57,7 @@ serve(async (req) => {
     const contratproKey = Deno.env.get('CONTRATPRO_SUPABASE_KEY');
     const financeflowUrl = Deno.env.get('FINANCEFLOW_SUPABASE_URL');
     const financeflowKey = Deno.env.get('FINANCEFLOW_SUPABASE_KEY');
-    
+
     console.log('=== Environment Variables Check ===')
     console.log('SUPABASE_URL:', contratproUrl ? `Set (${contratproUrl.substring(0, 20)}...)` : 'MISSING')
     console.log('SUPABASE_SERVICE_ROLE_KEY:', contratproKey ? 'Set (hidden)' : 'MISSING')
@@ -155,17 +155,17 @@ serve(async (req) => {
     console.log('=== Step 2: Fetching user from ContratPro ===')
     let contratproUser;
     try {
-      // Try to get user from user_profiles table first (more reliable)
+      // Try to get user from profiles table first (more reliable)
       const { data: profileData, error: profileError } = await contratproSupabase
-        .from('user_profiles')  
-        .select('user_id, email, name')
+        .from('profiles')  
+        .select('id, email, name')
         .eq('email', user_email)
         .maybeSingle()
 
       if (!profileError && profileData) {
         contratproUser = {
           user: {
-            id: profileData.user_id,
+            id: profileData.id,
             email: profileData.email
           }
         }
@@ -174,9 +174,9 @@ serve(async (req) => {
           email: contratproUser.user.email 
         })
       } else {
-        console.log('User not found in user_profiles, trying auth.users...')
+        console.log('User not found in profiles, trying auth.users...')
         
-        // Fallback: try to access auth.users (less reliable but sometimes needed)
+        // Fallback: try to access auth.users via RPC
         const { data: authUsers, error: authError } = await contratproSupabase
           .rpc('get_user_by_email', { email_input: user_email })
 
@@ -308,27 +308,29 @@ serve(async (req) => {
         // Get existing clients to avoid duplicates
         const { data: existingClients } = await contratproSupabase
           .from('clients')
-          .select('email, cpf_cnpj')
+          .select('email, cnpj')
           .eq('user_id', contratproUser.user.id)
 
         const existingEmails = new Set(existingClients?.map(c => c.email).filter(Boolean) || [])
-        const existingDocs = new Set(existingClients?.map(c => c.cpf_cnpj).filter(Boolean) || [])
+        const existingCnpjs = new Set(existingClients?.map(c => c.cnpj).filter(Boolean) || [])
 
-        // Transform and filter clients
+        // Transform and filter clients - mapping to correct schema
         const clientsToInsert = financeflowClients
           .map(client => ({
             user_id: contratproUser.user.id,
             name: client.name || 'Cliente sem nome',
             email: client.email || null,
-            phone: client.phone || null,
-            address: client.address || null,
-            cpf_cnpj: client.cpf_cnpj || client.document || null,
+            phone: client.phone || client.telefone || null,
+            address: client.address || client.endereco || null,
+            cnpj: client.cnpj || client.cpf_cnpj || client.document || null,
+            description: client.description || client.observacoes || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }))
           .filter(client => {
+            // Avoid duplicates by email or CNPJ
             if (client.email && existingEmails.has(client.email)) return false
-            if (client.cpf_cnpj && existingDocs.has(client.cpf_cnpj)) return false
+            if (client.cnpj && existingCnpjs.has(client.cnpj)) return false
             return true
           })
 
@@ -354,9 +356,93 @@ serve(async (req) => {
       console.log('Continuing despite client sync error...')
     }
 
+    // Step 6: Sync contracts (optional)
+    console.log('=== Step 6: Syncing contracts ===')
+    let contractsSynced = 0
+    
+    try {
+      // Fetch contracts from FinanceFlow
+      const { data: financeflowContracts, error: contractsError } = await financeflowSupabase
+        .from('contracts')
+        .select(`
+          *,
+          clients!inner(id, name, email)
+        `)
+        .eq('user_id', financeflowUser.id)
+
+      if (contractsError) {
+        console.error('Error fetching FinanceFlow contracts:', contractsError)
+        // Don't throw, just log and continue
+        console.log('Contracts table might not exist in FinanceFlow, skipping...')
+      } else if (financeflowContracts && financeflowContracts.length > 0) {
+        console.log(`Found ${financeflowContracts.length} contracts in FinanceFlow`)
+
+        // Get client mapping from ContratPro
+        const { data: contratproClients } = await contratproSupabase
+          .from('clients')
+          .select('id, email, name')
+          .eq('user_id', contratproUser.user.id)
+
+        const clientEmailMap = new Map()
+        contratproClients?.forEach(client => {
+          if (client.email) {
+            clientEmailMap.set(client.email, client.id)
+          }
+        })
+
+        // Transform contracts
+        const contractsToInsert = financeflowContracts
+          .map(contract => {
+            const clientEmail = contract.clients?.email
+            const clientId = clientEmailMap.get(clientEmail)
+            
+            if (!clientId) {
+              console.log(`Client not found for contract ${contract.id}, skipping...`)
+              return null
+            }
+
+            return {
+              client_id: clientId,
+              user_id: contratproUser.user.id,
+              title: contract.title || contract.nome || 'Contrato sem título',
+              description: contract.description || contract.descricao || null,
+              value: contract.value || contract.valor || 0,
+              start_date: contract.start_date || contract.data_inicio || null,
+              end_date: contract.end_date || contract.data_fim || null,
+              status: contract.status === 'active' ? 'ativo' : 
+                     contract.status === 'finished' ? 'finalizado' : 
+                     contract.status === 'cancelled' ? 'cancelado' : 'ativo',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          })
+          .filter(Boolean)
+
+        if (contractsToInsert.length > 0) {
+          const { error: insertContractsError } = await contratproSupabase
+            .from('contracts')
+            .insert(contractsToInsert)
+
+          if (insertContractsError) {
+            console.error('Error inserting contracts:', insertContractsError)
+            // Don't fail the entire sync for contract issues
+            console.log('Continuing despite contract sync error...')
+          } else {
+            contractsSynced = contractsToInsert.length
+            console.log(`Successfully synced ${contractsSynced} new contracts`)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error during contract sync:', error)
+      // Don't fail the entire operation for contract sync issues
+      console.log('Continuing despite contract sync error...')
+    }
+
     console.log('=== Sync completed successfully ===')
     console.log(`Plan: ${financeflowUser.subscription} -> ${contratproPlan}`)
     console.log(`Clients synced: ${clientsSynced}`)
+    console.log(`Contracts synced: ${contractsSynced}`)
 
     return new Response(
       JSON.stringify({ 
@@ -365,8 +451,9 @@ serve(async (req) => {
         original_plan: financeflowUser.subscription,
         mapped_plan: contratproPlan,
         clients_synced: clientsSynced,
+        contracts_synced: contractsSynced,
         synced_at: new Date().toISOString(),
-        message: `Plan successfully synced from ${financeflowUser.subscription} to ${contratproPlan}. ${clientsSynced} clients synchronized.`
+        message: `Plan successfully synced from ${financeflowUser.subscription} to ${contratproPlan}. ${clientsSynced} clients and ${contractsSynced} contracts synchronized.`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
