@@ -171,24 +171,24 @@ serve(async (req) => {
     try {
       // Try to get user from profiles table first
       const { data: profileData, error: profileError } = await contratproSupabase
-        .from('profiles')  
-        .select('id, email, name')
+        .from('user_profiles')  
+        .select('id, email, name, user_id')
         .eq('email', user_email)
         .maybeSingle()
 
       if (!profileError && profileData) {
         contratproUser = {
           user: {
-            id: profileData.id,
+            id: profileData.user_id,
             email: profileData.email
           }
         }
-        console.log('ContratPro user found via profiles:', { 
+        console.log('ContratPro user found via user_profiles:', { 
           id: contratproUser.user.id, 
           email: contratproUser.user.email 
         })
       } else {
-        console.log('User not found in profiles, checking auth.users...')
+        console.log('User not found in user_profiles, checking auth.users...')
         
         const { data: userData, error: userError } = await contratproSupabase.auth.admin.listUsers()
         
@@ -260,7 +260,7 @@ serve(async (req) => {
       console.log(`Found ${financeflowClients?.length || 0} clients in FinanceFlow`)
       
       if (financeflowClients && financeflowClients.length > 0) {
-        console.log('Sample client data:', financeflowClients[0])
+        console.log('Sample client data from FinanceFlow:', financeflowClients[0])
         
         // Get existing clients to avoid duplicates
         const { data: existingClients } = await contratproSupabase
@@ -274,15 +274,22 @@ serve(async (req) => {
         const existingCnpjs = new Set(existingClients?.map(c => c.cnpj).filter(Boolean) || [])
         const existingNames = new Set(existingClients?.map(c => c.name).filter(Boolean) || [])
 
-        // Transform and filter clients
+        // Transform and filter clients according to ContratPro schema
         const clientsToInsert = financeflowClients
           .map(client => {
-            console.log('Processing client:', client.name || 'No name')
+            console.log('Processing FinanceFlow client:', {
+              name: client.name || client.nome,
+              email: client.email,
+              phone: client.phone || client.telefone || client.celular,
+              cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf
+            })
+            
             return {
               user_id: contratproUser.user.id,
+              company_id: null, // Não temos company_id no FinanceFlow
               name: client.name || client.nome || 'Cliente sem nome',
-              email: client.email || null,
               phone: client.phone || client.telefone || client.celular || null,
+              email: client.email || null,
               address: client.address || client.endereco || null,
               cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf || null,
               description: client.description || client.observacoes || client.obs || null,
@@ -310,7 +317,12 @@ serve(async (req) => {
         console.log(`Clients to insert: ${clientsToInsert.length}`)
 
         if (clientsToInsert.length > 0) {
-          console.log('Inserting clients:', clientsToInsert.map(c => ({ name: c.name, email: c.email })))
+          console.log('Inserting clients into ContratPro:', clientsToInsert.map(c => ({ 
+            name: c.name, 
+            email: c.email, 
+            phone: c.phone,
+            cnpj: c.cnpj 
+          })))
           
           const { data: insertData, error: insertError } = await contratproSupabase
             .from('clients')
@@ -330,7 +342,7 @@ serve(async (req) => {
 
           clientsSynced = clientsToInsert.length
           console.log(`Successfully synced ${clientsSynced} new clients`)
-          console.log('Inserted clients:', insertData)
+          console.log('Inserted clients data:', insertData)
         } else {
           console.log('No new clients to sync (all already exist)')
         }
