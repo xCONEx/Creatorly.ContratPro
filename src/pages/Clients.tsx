@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, MapPin, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, MapPin, X, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import ClientDetailModal from '@/components/client/ClientDetailModal';
+import ClientsDebugInfo from '@/components/ClientsDebugInfo';
 
 interface Client {
   id: string;
@@ -17,6 +18,7 @@ interface Client {
   email?: string;
   phone?: string;
   address?: string;
+  cnpj?: string;
   cpf_cnpj?: string;
   created_at: string;
   user_id: string;
@@ -31,6 +33,7 @@ const Clients = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -50,29 +53,59 @@ const Clients = () => {
     const filtered = clients.filter(client =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.cpf_cnpj?.includes(searchTerm) || ''
+      client.cpf_cnpj?.includes(searchTerm) ||
+      client.cnpj?.includes(searchTerm) || ''
     );
     setFilteredClients(filtered);
   }, [clients, searchTerm]);
 
-  const fetchClients = async () => {
+  const fetchClients = async (showRefreshToast = false) => {
     if (!user) return;
 
+    console.log('=== Fetching clients ===');
+    console.log('User ID:', user.id);
+    console.log('User email:', user.email);
+
     try {
+      // Buscar todos os clientes sem filtros iniciais para debug
+      const { data: allData, error: allError } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('All clients in database:', allData);
+      console.log('All clients error:', allError);
+
+      // Buscar clientes específicos do usuário
       const { data, error } = await supabase
         .from('clients')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('User clients query result:', { data, error });
+      console.log('Found clients count:', data?.length || 0);
+
+      if (error) {
+        console.error('Error fetching clients:', error);
+        throw error;
+      }
       
-      // Filtrar clientes não arquivados (remover lógica de tags)
+      // Filtrar clientes não arquivados
       const activeClients = (data || []).filter(client => 
         !client.name.startsWith('[ARQUIVADO]')
       );
       
+      console.log('Active clients after filter:', activeClients);
+      
       setClients(activeClients);
+      
+      if (showRefreshToast) {
+        toast({
+          title: "Clientes atualizados!",
+          description: `${activeClients.length} cliente${activeClients.length !== 1 ? 's' : ''} encontrado${activeClients.length !== 1 ? 's' : ''}`,
+        });
+      }
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({
@@ -82,7 +115,13 @@ const Clients = () => {
       });
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchClients(true);
   };
 
   const handleClientClick = (client: Client) => {
@@ -97,7 +136,7 @@ const Clients = () => {
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
-        cpf_cnpj: client.cpf_cnpj || ''
+        cpf_cnpj: client.cpf_cnpj || client.cnpj || ''
       });
     } else {
       setEditingClient(null);
@@ -142,8 +181,11 @@ const Clients = () => {
         email: formData.email || null,
         phone: formData.phone || null,
         address: formData.address || null,
+        cnpj: formData.cpf_cnpj || null,
         cpf_cnpj: formData.cpf_cnpj || null,
       };
+
+      console.log('Saving client data:', clientData);
 
       if (editingClient) {
         const { error } = await supabase
@@ -227,19 +269,36 @@ const Clients = () => {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Debug Info - só aparece em desenvolvimento */}
+      <ClientsDebugInfo />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Clientes</h1>
           <p className="text-slate-600">Gerencie seus clientes e suas informações</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Total: {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''}
+          </p>
         </div>
-        <Button 
-          onClick={() => handleOpenDialog()}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            className="w-full sm:w-auto"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+          </Button>
+          <Button 
+            onClick={() => handleOpenDialog()}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 w-full sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -268,13 +327,19 @@ const Clients = () => {
             <p className="text-slate-500 mb-4">
               {searchTerm 
                 ? 'Tente buscar por outros termos' 
-                : 'Adicione seu primeiro cliente para começar'}
+                : 'Adicione seu primeiro cliente ou sincronize com o FinanceFlow'}
             </p>
             {!searchTerm && (
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Cliente
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <Button onClick={() => handleOpenDialog()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Cliente
+                </Button>
+                <Button onClick={handleRefresh} variant="outline">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Verificar Sincronização
+                </Button>
+              </div>
             )}
           </div>
         ) : (
@@ -288,8 +353,10 @@ const Clients = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-base md:text-lg">{client.name}</CardTitle>
-                    {client.cpf_cnpj && (
-                      <CardDescription className="text-sm">{client.cpf_cnpj}</CardDescription>
+                    {(client.cpf_cnpj || client.cnpj) && (
+                      <CardDescription className="text-sm">
+                        {client.cpf_cnpj || client.cnpj}
+                      </CardDescription>
                     )}
                   </div>
                   <div className="flex space-x-1">
