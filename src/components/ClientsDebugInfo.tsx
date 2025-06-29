@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,9 +26,9 @@ const ClientsDebugInfo = () => {
       // Buscar total de clientes na base
       const { data: allClients, error: allError } = await supabase
         .from('clients')
-        .select('id, name, user_id, created_at');
+        .select('id, name, user_id, created_at, cnpj, email');
 
-      // Buscar informações do usuário - corrigindo o nome da tabela
+      // Buscar informações do usuário
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
@@ -37,6 +38,7 @@ const ClientsDebugInfo = () => {
       setDebugInfo({
         userClients: userClients || [],
         allClientsCount: allClients?.length || 0,
+        allClients: allClients || [],
         userInfo: {
           id: user.id,
           email: user.email,
@@ -110,7 +112,7 @@ const ClientsDebugInfo = () => {
 
         {debugInfo && (
           <div className="space-y-4 text-sm">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="p-3 bg-white rounded border">
                 <h4 className="font-semibold text-blue-600 mb-2">Seus Clientes</h4>
                 <p>Quantidade: {debugInfo.userClients?.length || 0}</p>
@@ -121,8 +123,13 @@ const ClientsDebugInfo = () => {
                         <strong>{client.name}</strong>
                         <br />
                         <span className="text-gray-500">
-                          {client.email || 'Sem email'} | 
-                          {new Date(client.created_at).toLocaleDateString()}
+                          Email: {client.email || 'Sem email'} | 
+                          CNPJ: {client.cnpj || 'Sem CNPJ'} |
+                          Tel: {client.phone || 'Sem telefone'}
+                        </span>
+                        <br />
+                        <span className="text-gray-400 text-xs">
+                          Criado: {new Date(client.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     ))}
@@ -136,6 +143,23 @@ const ClientsDebugInfo = () => {
                 <p>Seu ID: {debugInfo.userInfo?.id}</p>
                 <p>Seu email: {debugInfo.userInfo?.email}</p>
                 <p>Perfil encontrado: {debugInfo.userInfo?.profile ? 'Sim' : 'Não'}</p>
+                
+                {debugInfo.allClients?.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium">Últimos 5 clientes no sistema:</p>
+                    <div className="max-h-24 overflow-y-auto text-xs">
+                      {debugInfo.allClients.slice(0, 5).map((client: any) => (
+                        <div key={client.id} className="border-b py-1">
+                          <span className="font-medium">{client.name}</span>
+                          <br />
+                          <span className="text-gray-500">
+                            User: {client.user_id} | {client.email || 'Sem email'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
