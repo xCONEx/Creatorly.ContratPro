@@ -53,11 +53,11 @@ serve(async (req) => {
     }
 
     // Get environment variables with detailed logging
-    const contratproUrl = Deno.env.get('SUPABASE_URL')
-    const contratproKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const financeflowUrl = Deno.env.get('FINANCEFLOW_SUPABASE_URL')
-    const financeflowKey = Deno.env.get('FINANCEFLOW_SUPABASE_KEY')
-
+    const contratproUrl = Deno.env.get('CONTRATPRO_SUPABASE_URL');
+    const contratproKey = Deno.env.get('CONTRATPRO_SUPABASE_KEY');
+    const financeflowUrl = Deno.env.get('FINANCEFLOW_SUPABASE_URL');
+    const financeflowKey = Deno.env.get('FINANCEFLOW_SUPABASE_KEY');
+    
     console.log('=== Environment Variables Check ===')
     console.log('SUPABASE_URL:', contratproUrl ? `Set (${contratproUrl.substring(0, 20)}...)` : 'MISSING')
     console.log('SUPABASE_SERVICE_ROLE_KEY:', contratproKey ? 'Set (hidden)' : 'MISSING')
@@ -151,31 +151,18 @@ serve(async (req) => {
       )
     }
 
-    // Step 2: Get ContratPro user - FIXED METHOD
+    // Step 2: Get ContratPro user with improved error handling
     console.log('=== Step 2: Fetching user from ContratPro ===')
     let contratproUser;
     try {
-      // First, try to get user from auth.users table directly
-      const { data: authUsers, error: authError } = await contratproSupabase
-        .from('auth.users')
-        .select('*')
+      // Try to get user from user_profiles table first (more reliable)
+      const { data: profileData, error: profileError } = await contratproSupabase
+        .from('user_profiles')  
+        .select('user_id, email, name')
         .eq('email', user_email)
-        .single()
+        .maybeSingle()
 
-      if (authError || !authUsers) {
-        console.log('User not found in auth.users, trying alternative method...')
-        
-        // Alternative: Look for user in user_profiles table
-        const { data: profileData, error: profileError } = await contratproSupabase
-          .from('user_profiles')
-          .select('user_id, email')
-          .eq('email', user_email)
-          .single()
-
-        if (profileError || !profileData) {
-          throw new Error('User not found in ContratPro database')
-        }
-
+      if (!profileError && profileData) {
         contratproUser = {
           user: {
             id: profileData.user_id,
@@ -187,16 +174,26 @@ serve(async (req) => {
           email: contratproUser.user.email 
         })
       } else {
-        contratproUser = {
-          user: {
-            id: authUsers.id,
-            email: authUsers.email
+        console.log('User not found in user_profiles, trying auth.users...')
+        
+        // Fallback: try to access auth.users (less reliable but sometimes needed)
+        const { data: authUsers, error: authError } = await contratproSupabase
+          .rpc('get_user_by_email', { email_input: user_email })
+
+        if (!authError && authUsers && authUsers.length > 0) {
+          contratproUser = {
+            user: {
+              id: authUsers[0].id,
+              email: authUsers[0].email
+            }
           }
+          console.log('ContratPro user found via RPC:', { 
+            id: contratproUser.user.id, 
+            email: contratproUser.user.email 
+          })
+        } else {
+          throw new Error('User not found in ContratPro database')
         }
-        console.log('ContratPro user found via auth.users:', { 
-          id: contratproUser.user.id, 
-          email: contratproUser.user.email 
-        })
       }
     } catch (error) {
       console.error('Error fetching ContratPro user:', error)
