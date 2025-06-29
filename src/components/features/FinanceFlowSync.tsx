@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, CheckCircle, AlertCircle, Zap, Database, Users } from 'lucide-react';
+import { RefreshCw, CheckCircle, AlertCircle, Zap, Database, Users, FileText } from 'lucide-react';
 import { useFinanceFlowSync } from '@/hooks/useFinanceFlowSync';
 import { useSubscription } from '@/hooks/useSubscription';
 
@@ -48,7 +48,7 @@ const FinanceFlowSync = () => {
           <span>Sincronização FinanceFlow</span>
         </CardTitle>
         <CardDescription>
-          Sincronize automaticamente seu plano e clientes do FinanceFlow com o ContratPro
+          Sincronize automaticamente seu plano, clientes e contratos do FinanceFlow com o ContratPro
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -78,6 +78,10 @@ const FinanceFlowSync = () => {
             <div className="flex items-center space-x-2 p-2 bg-green-50 dark:bg-green-900/20 rounded">
               <Users className="w-4 h-4 text-green-500" />
               <span className="text-green-700 dark:text-green-300">Base de clientes</span>
+            </div>
+            <div className="flex items-center space-x-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+              <FileText className="w-4 h-4 text-purple-500" />
+              <span className="text-purple-700 dark:text-purple-300">Contratos ativos</span>
             </div>
           </div>
         </div>
@@ -109,6 +113,7 @@ const FinanceFlowSync = () => {
             <li>• Conectamos com seu FinanceFlow usando seu email</li>
             <li>• Verificamos seu plano atual no FinanceFlow</li>
             <li>• Importamos seus clientes cadastrados</li>
+            <li>• Sincronizamos contratos existentes (se disponível)</li>
             <li>• Atualizamos automaticamente seu plano no ContratPro</li>
             <li>• Sincronização automática no login</li>
           </ul>
@@ -134,7 +139,7 @@ const FinanceFlowSync = () => {
 
         <div className="text-xs text-muted-foreground p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <strong>📝 Importante:</strong> Para funcionar corretamente, você precisa ter uma conta no FinanceFlow 
-          com o mesmo email usado aqui no ContratPro. Os clientes serão importados automaticamente evitando duplicatas.
+          com o mesmo email usado aqui no ContratPro. Os clientes e contratos serão importados automaticamente evitando duplicatas.
         </div>
       </CardContent>
     </Card>
