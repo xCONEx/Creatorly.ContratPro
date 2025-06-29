@@ -24,7 +24,7 @@ interface Client {
   cpf_cnpj?: string;
   description?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 const Clients = () => {
