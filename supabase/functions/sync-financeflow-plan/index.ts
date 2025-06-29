@@ -13,7 +13,77 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
   console.log(`=== Buscando clientes do FinanceFlow para user_email: ${userEmail} ===`);
   
   try {
-    // Buscar clientes usando user_email diretamente
+    // Primeiro, testar conexão com FinanceFlow
+    console.log('=== Testando conexão com FinanceFlow ===');
+    const { data: testConnection, error: testError } = await financeflowSupabase
+      .from('clients')
+      .select('count', { count: 'exact' })
+      .limit(1);
+    
+    if (testError) {
+      console.error('Erro de conexão com FinanceFlow:', testError);
+      throw new Error(`Conexão com FinanceFlow falhou: ${testError.message}`);
+    }
+    
+    console.log('Conexão com FinanceFlow estabelecida com sucesso');
+    
+    // Buscar TODOS os clientes primeiro para debug
+    console.log('=== Debug: Buscando TODOS os clientes do FinanceFlow ===');
+    const { data: allClientsData, error: allClientsError } = await financeflowSupabase
+      .from('clients')
+      .select(`
+        id,
+        user_id,
+        user_email,
+        name,
+        nome,
+        email,
+        phone,
+        telefone,
+        celular,
+        address,
+        endereco,
+        cnpj,
+        cpf_cnpj,
+        cpf,
+        document,
+        description,
+        observacoes,
+        obs,
+        created_at,
+        updated_at
+      `)
+      .limit(10);
+    
+    if (allClientsError) {
+      console.error('Erro ao buscar todos os clientes:', allClientsError);
+    } else {
+      console.log(`Total de clientes encontrados na base FinanceFlow: ${allClientsData?.length || 0}`);
+      if (allClientsData && allClientsData.length > 0) {
+        console.log('Exemplo de cliente na base:', {
+          id: allClientsData[0].id,
+          user_email: allClientsData[0].user_email,
+          name: allClientsData[0].name || allClientsData[0].nome,
+          email: allClientsData[0].email
+        });
+        
+        // Verificar se existem clientes com o user_email procurado
+        const clientsWithEmail = allClientsData.filter(client => client.user_email === userEmail);
+        console.log(`Clientes encontrados com user_email ${userEmail}: ${clientsWithEmail.length}`);
+        
+        if (clientsWithEmail.length === 0) {
+          // Buscar clientes com emails similares para debug
+          const similarEmails = allClientsData
+            .filter(client => client.user_email && client.user_email.includes('@'))
+            .map(client => client.user_email)
+            .slice(0, 5);
+          console.log('Emails encontrados na base (primeiros 5):', similarEmails);
+        }
+      }
+    }
+    
+    // Agora buscar clientes usando user_email diretamente
+    console.log(`=== Buscando clientes específicos para user_email: ${userEmail} ===`);
     const { data: clientsData, error: clientsError } = await financeflowSupabase
       .from('clients')
       .select(`
@@ -49,12 +119,20 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
     console.log(`Encontrados ${clientsData?.length || 0} clientes para user_email ${userEmail}`);
     
     if (clientsData && clientsData.length > 0) {
-      console.log('Exemplo de cliente encontrado:', {
-        id: clientsData[0].id,
-        name: clientsData[0].name || clientsData[0].nome,
-        email: clientsData[0].email,
-        user_email: clientsData[0].user_email
-      });
+      console.log('Clientes encontrados:', clientsData.map(client => ({
+        id: client.id,
+        name: client.name || client.nome,
+        email: client.email,
+        user_email: client.user_email,
+        phone: client.phone || client.telefone || client.celular,
+        cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf
+      })));
+    } else {
+      console.log('ATENÇÃO: Nenhum cliente encontrado para este user_email no FinanceFlow');
+      console.log('Verificar se:');
+      console.log('1. O user_email está correto:', userEmail);
+      console.log('2. Existem clientes cadastrados no FinanceFlow com este email');
+      console.log('3. O campo user_email está preenchido na tabela clients do FinanceFlow');
     }
 
     return clientsData || [];
@@ -335,6 +413,9 @@ serve(async (req) => {
       // Usar a nova função para buscar clientes por user_email
       const financeflowClients = await fetchFinanceFlowClientsByUserEmail(financeflowSupabase, user_email);
       
+      console.log(`=== Resultado da busca de clientes FinanceFlow ===`);
+      console.log(`Clientes encontrados: ${financeflowClients?.length || 0}`);
+      
       if (financeflowClients && financeflowClients.length > 0) {
         console.log('Sample client data from FinanceFlow:', financeflowClients[0])
         
@@ -425,6 +506,7 @@ serve(async (req) => {
         }
       } else {
         console.log('No clients found in FinanceFlow for this user_email')
+        console.log('IMPORTANTE: Verificar se existem clientes cadastrados no FinanceFlow com user_email:', user_email)
       }
     } catch (error) {
       console.error('Error during client sync:', error)
