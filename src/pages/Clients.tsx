@@ -6,14 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Users, Mail, Phone, MapPin, FileText, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Users, Mail, Phone, MapPin, FileText, Edit, Trash2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import ClientDetailModal from '@/components/client/ClientDetailModal';
 import ClientsDebugInfo from '@/components/ClientsDebugInfo';
 import FinanceFlowDebug from '@/components/FinanceFlowDebug';
- 
+
 interface Client {
   id: string;
   name: string;
@@ -21,6 +21,7 @@ interface Client {
   phone?: string;
   address?: string;
   cnpj?: string;
+  cpf_cnpj?: string;
   description?: string;
   created_at: string;
   updated_at: string;
@@ -55,7 +56,8 @@ const Clients = () => {
       client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.phone?.includes(searchTerm) ||
-      client.cnpj?.includes(searchTerm)
+      client.cnpj?.includes(searchTerm) ||
+      client.cpf_cnpj?.includes(searchTerm)
     );
     setFilteredClients(filtered);
   }, [clients, searchTerm]);
@@ -92,10 +94,13 @@ const Clients = () => {
         throw error;
       }
       
-      // Filtrar clientes não arquivados
+      // Filtrar clientes não arquivados e garantir que tenham updated_at
       const activeClients = (data || []).filter(client => 
         !client.name.startsWith('[ARQUIVADO]')
-      );
+      ).map(client => ({
+        ...client,
+        updated_at: client.updated_at || client.created_at
+      }));
       
       console.log('Active clients after filter:', activeClients);
       
@@ -166,7 +171,7 @@ const Clients = () => {
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
