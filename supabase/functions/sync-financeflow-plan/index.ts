@@ -8,17 +8,18 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Nova função para buscar clientes do FinanceFlow por user_id
-const fetchFinanceFlowClientsByUserId = async (financeflowSupabase: any, userId: string) => {
-  console.log(`=== Buscando clientes do FinanceFlow para user_id: ${userId} ===`);
+// Nova função para buscar clientes do FinanceFlow por user_email
+const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, userEmail: string) => {
+  console.log(`=== Buscando clientes do FinanceFlow para user_email: ${userEmail} ===`);
   
   try {
-    // Buscar clientes usando user_id diretamente
+    // Buscar clientes usando user_email diretamente
     const { data: clientsData, error: clientsError } = await financeflowSupabase
       .from('clients')
       .select(`
         id,
         user_id,
+        user_email,
         name,
         nome,
         email,
@@ -37,28 +38,28 @@ const fetchFinanceFlowClientsByUserId = async (financeflowSupabase: any, userId:
         created_at,
         updated_at
       `)
-      .eq('user_id', userId)
+      .eq('user_email', userEmail)
       .order('created_at', { ascending: false });
 
     if (clientsError) {
-      console.error('Erro ao buscar clientes por user_id:', clientsError);
+      console.error('Erro ao buscar clientes por user_email:', clientsError);
       throw clientsError;
     }
 
-    console.log(`Encontrados ${clientsData?.length || 0} clientes para user_id ${userId}`);
+    console.log(`Encontrados ${clientsData?.length || 0} clientes para user_email ${userEmail}`);
     
     if (clientsData && clientsData.length > 0) {
       console.log('Exemplo de cliente encontrado:', {
         id: clientsData[0].id,
         name: clientsData[0].name || clientsData[0].nome,
         email: clientsData[0].email,
-        user_id: clientsData[0].user_id
+        user_email: clientsData[0].user_email
       });
     }
 
     return clientsData || [];
   } catch (error) {
-    console.error('Erro na função fetchFinanceFlowClientsByUserId:', error);
+    console.error('Erro na função fetchFinanceFlowClientsByUserEmail:', error);
     throw error;
   }
 };
@@ -224,13 +225,13 @@ serve(async (req) => {
     if (action === 'fetch_clients') {
       console.log('=== Ação: Buscar apenas clientes ===')
       try {
-        const clients = await fetchFinanceFlowClientsByUserId(financeflowSupabase, financeflowUser.id);
+        const clients = await fetchFinanceFlowClientsByUserEmail(financeflowSupabase, user_email);
         
         return new Response(
           JSON.stringify({ 
             success: true,
             action: 'fetch_clients',
-            user_id: financeflowUser.id,
+            user_email: user_email,
             clients: clients,
             clients_count: clients.length,
             timestamp: new Date().toISOString()
@@ -326,13 +327,13 @@ serve(async (req) => {
     
     console.log(`Plan mapping: ${financeflowUser.subscription} -> ${contratproPlan}`)
 
-    // Step 4: Sync clients from FinanceFlow usando a nova função
-    console.log('=== Step 4: Syncing clients usando user_id ===')
+    // Step 4: Sync clients from FinanceFlow usando user_email
+    console.log('=== Step 4: Syncing clients usando user_email ===')
     let clientsSynced = 0
     
     try {
-      // Usar a nova função para buscar clientes por user_id
-      const financeflowClients = await fetchFinanceFlowClientsByUserId(financeflowSupabase, financeflowUser.id);
+      // Usar a nova função para buscar clientes por user_email
+      const financeflowClients = await fetchFinanceFlowClientsByUserEmail(financeflowSupabase, user_email);
       
       if (financeflowClients && financeflowClients.length > 0) {
         console.log('Sample client data from FinanceFlow:', financeflowClients[0])
@@ -356,7 +357,8 @@ serve(async (req) => {
               name: client.name || client.nome,
               email: client.email,
               phone: client.phone || client.telefone || client.celular,
-              cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf
+              cnpj: client.cnpj || client.cpf_cnpj || client.document || client.cpf,
+              user_email: client.user_email
             })
             
             return {
@@ -422,7 +424,7 @@ serve(async (req) => {
           console.log('No new clients to sync (all already exist)')
         }
       } else {
-        console.log('No clients found in FinanceFlow')
+        console.log('No clients found in FinanceFlow for this user_email')
       }
     } catch (error) {
       console.error('Error during client sync:', error)
