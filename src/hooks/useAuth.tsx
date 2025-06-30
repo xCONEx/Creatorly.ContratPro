@@ -48,6 +48,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    // Função utilitária para garantir assinatura ativa
+    const ensureUserSubscription = async (user: User | null) => {
+      if (!user) return;
+      // Busca plano gratuito
+      const { data: plan, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('name', 'Gratuito')
+        .maybeSingle();
+      if (!plan || planError) return;
+      // Verifica se já existe assinatura
+      const { data: sub, error: subError } = await supabase
+        .from('user_subscriptions')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!sub && !subError) {
+        const { error: insertError } = await supabase.from('user_subscriptions').insert([
+          {
+            user_id: user.id,
+            plan_id: plan.id,
+            status: 'active',
+            started_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]);
+        // Se der erro 409/23505 (conflito), ignora
+        if (insertError && insertError.code !== '23505') {
+          console.error('Erro ao criar assinatura do usuário:', insertError);
+        }
+      }
+    };
+
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -58,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Garantir perfil antes de sincronizar
         if (event === 'SIGNED_IN' && session?.user?.email) {
           await ensureUserProfile(session.user);
+          await ensureUserSubscription(session.user);
           console.log('User signed in, triggering FinanceFlow sync...');
           setTimeout(() => {
             syncWithFinanceFlow();
@@ -73,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       if (session?.user) {
         await ensureUserProfile(session.user);
+        await ensureUserSubscription(session.user);
       }
     });
 
