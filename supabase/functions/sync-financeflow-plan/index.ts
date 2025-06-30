@@ -38,7 +38,6 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
         phone,
         address,
         cnpj,
-        cpf_cnpj,
         description,
         created_at,
         updated_at
@@ -69,7 +68,6 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
         phone,
         address,
         cnpj,
-        cpf_cnpj,
         description,
         created_at,
         updated_at
@@ -91,7 +89,7 @@ const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, user
         email: client.email,
         user_email: client.user_email,
         phone: client.phone,
-        cnpj: client.cnpj || client.cpf_cnpj
+        cnpj: client.cnpj
       })));
     } else {
       console.log('ATENÇÃO: Nenhum cliente encontrado para este user_email no FinanceFlow');
@@ -410,7 +408,7 @@ serve(async (req) => {
         phone: client.phone || null,
         email: client.email || null,
         address: client.address || null,
-        cnpj: client.cnpj || client.cpf_cnpj || null,
+        cnpj: client.cnpj || null,
         description: client.description || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
