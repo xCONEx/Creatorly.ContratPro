@@ -21,30 +21,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Função utilitária para garantir o perfil do usuário
+    const ensureUserProfile = async (user: User | null) => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!data) {
+        await supabase.from('user_profiles').insert([
+          {
+            user_id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.email,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]);
+      }
+    };
+
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth event:', event, session);
-        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-
-        // Trigger FinanceFlow sync on sign in
+        // Garantir perfil antes de sincronizar
         if (event === 'SIGNED_IN' && session?.user?.email) {
+          await ensureUserProfile(session.user);
           console.log('User signed in, triggering FinanceFlow sync...');
           setTimeout(() => {
             syncWithFinanceFlow();
-          }, 2000); // Delay to ensure user data is loaded
+          }, 2000);
         }
       }
     );
 
     // Verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        await ensureUserProfile(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();
