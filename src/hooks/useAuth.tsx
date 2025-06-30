@@ -29,8 +29,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .select('user_id')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (!data) {
-        await supabase.from('user_profiles').insert([
+
+      // Só insere se não encontrou o perfil
+      if (!data && !error) {
+        const { error: insertError } = await supabase.from('user_profiles').insert([
           {
             user_id: user.id,
             email: user.email,
@@ -39,6 +41,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             updated_at: new Date().toISOString(),
           },
         ]);
+        // Se der erro 409 (conflito), ignora
+        if (insertError && insertError.code !== '23505' && insertError.status !== 409) {
+          console.error('Erro ao criar perfil do usuário:', insertError);
+        }
       }
     };
 
