@@ -352,39 +352,63 @@ serve(async (req) => {
     const contratproPlan = planMapping[originalPlan] || 'Gratuito';
     console.log(`Plan mapping: ${financeflowUser.subscription} -> ${contratproPlan}`);
 
-    // Step 3.1: Atualizar plano do ContratPro (user_subscriptions)
+    // Step 3.1: Atualizar assinatura do usuário no ContratPro
+    console.log('=== Step 3.1: Atualizando assinatura do usuário no ContratPro ===');
     try {
-      // Buscar plano atual do ContratPro
-      const { data: userSub, error: userSubError } = await contratproSupabase.from('user_subscriptions').select('id, plan_id, status').eq('user_id', contratproUser.user.id).maybeSingle();
-      // Buscar plano correspondente
-      const { data: planData, error: planError } = await contratproSupabase.from('subscription_plans').select('id, name').eq('name', contratproPlan).maybeSingle();
+      // Buscar plano no ContratPro
+      const { data: planData, error: planError } = await contratproSupabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('name', contratproPlan)
+        .maybeSingle();
       if (planError || !planData) {
         throw new Error('Plano não encontrado no ContratPro: ' + contratproPlan);
       }
-      if (!userSub) {
-        // Criar nova assinatura
-        await contratproSupabase.from('user_subscriptions').insert({
-          user_id: contratproUser.user.id,
-          plan_id: planData.id,
-          status: 'active',
-          started_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-        console.log('Assinatura criada no ContratPro:', contratproPlan);
-      } else if (userSub.plan_id !== planData.id || userSub.status !== 'active') {
+      // Verificar se já existe assinatura
+      const { data: userSub, error: userSubError } = await contratproSupabase
+        .from('user_subscriptions')
+        .select('id')
+        .eq('user_id', contratproUser.user.id)
+        .maybeSingle();
+      if (userSub && !userSubError) {
         // Atualizar assinatura existente
-        await contratproSupabase.from('user_subscriptions').update({
-          plan_id: planData.id,
-          status: 'active',
-          updated_at: new Date().toISOString()
-        }).eq('id', userSub.id);
-        console.log('Assinatura atualizada no ContratPro:', contratproPlan);
+        const { error: updateError } = await contratproSupabase
+          .from('user_subscriptions')
+          .update({
+            plan_id: planData.id,
+            status: 'active',
+            updated_at: new Date().toISOString(),
+            ended_at: null
+          })
+          .eq('user_id', contratproUser.user.id);
+        if (updateError) throw updateError;
+        console.log('Assinatura do usuário atualizada para plano:', contratproPlan);
       } else {
-        console.log('Assinatura já está correta no ContratPro.');
+        // Criar nova assinatura
+        const { error: insertError } = await contratproSupabase
+          .from('user_subscriptions')
+          .insert([{
+            user_id: contratproUser.user.id,
+            plan_id: planData.id,
+            status: 'active',
+            started_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]);
+        if (insertError) throw insertError;
+        console.log('Assinatura do usuário criada para plano:', contratproPlan);
       }
+      // (Opcional) Atualizar campo subscription em user_profiles
+      await contratproSupabase
+        .from('user_profiles')
+        .update({
+          subscription: contratproPlan,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', contratproUser.user.id);
     } catch (error) {
-      console.error('Erro ao atualizar plano do ContratPro:', error);
+      console.error('Erro ao atualizar assinatura do usuário:', error);
+      // Não falhe a sync por isso, mas logue o erro
     }
 
     // Step 4: Sync clients from FinanceFlow usando user_email
