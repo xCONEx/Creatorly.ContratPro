@@ -55,36 +55,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (!existingProfile) {
-        // Create new profile with only the columns that exist
-        const profileData: any = {
-          id: user.id,
-          full_name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
-          user_type: 'individual',
-          subscription: 'free'
+        // Create new profile with minimal data first
+        const minimalProfileData: any = {
+          id: user.id
         };
 
-        // Only add email if the column exists (we'll check this dynamically)
+        // Try to add name/full_name if the column exists
+        const nameValue = user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário';
+        
+        // Try different column names for name
         try {
-          // Try to insert with email first
-          const { error: emailError } = await supabase
+          const { error: nameError } = await supabase
             .from('user_profiles')
             .insert({
-              ...profileData,
-              email: user.email
+              ...minimalProfileData,
+              full_name: nameValue
             });
 
-          if (emailError && emailError.message.includes('email')) {
-            // If email column doesn't exist, try without it
-            console.log('Email column not found, creating profile without email');
-            const { error } = await supabase
+          if (nameError && nameError.message.includes('full_name')) {
+            // Try with 'name' column
+            const { error: nameError2 } = await supabase
               .from('user_profiles')
-              .insert(profileData);
+              .insert({
+                ...minimalProfileData,
+                name: nameValue
+              });
 
-            if (error) {
-              console.error('Erro ao criar perfil do usuário (sem email):', error);
+            if (nameError2 && nameError2.message.includes('name')) {
+              // If both fail, just insert with id
+              const { error } = await supabase
+                .from('user_profiles')
+                .insert(minimalProfileData);
+
+              if (error) {
+                console.error('Erro ao criar perfil do usuário (apenas id):', error);
+              } else {
+                console.log('Perfil criado com sucesso (apenas id)');
+              }
+            } else if (nameError2) {
+              console.error('Erro ao criar perfil do usuário (com name):', nameError2);
+            } else {
+              console.log('Perfil criado com sucesso (com name)');
             }
-          } else if (emailError) {
-            console.error('Erro ao criar perfil do usuário (com email):', emailError);
+          } else if (nameError) {
+            console.error('Erro ao criar perfil do usuário (com full_name):', nameError);
+          } else {
+            console.log('Perfil criado com sucesso (com full_name)');
           }
         } catch (error) {
           console.error('Erro ao criar perfil do usuário:', error);
