@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,10 +40,10 @@ const Features = () => {
               </p>
             </div>
             <div className="text-right">
-              {subscription?.plan.price_monthly && (
-                <p className="text-2xl font-bold text-green-600">
-                  R$ {subscription.plan.price_monthly}/mês
-                </p>
+              {subscription?.plan.price && (
+                <div className="text-2xl font-bold text-green-600">
+                  R$ {subscription.plan.price}/mês
+                </div>
               )}
             </div>
           </div>

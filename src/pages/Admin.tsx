@@ -20,11 +20,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 interface UserSubscription {
+  id: number;
+  user_id: string;
+  plan_id: number;
   status: string;
-  plan: {
-    id: string;
+  start_date: string;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  subscription_plans: {
+    id: number;
     name: string;
-    price_monthly: number;
+    price: number;
   };
 }
 
@@ -40,9 +48,14 @@ interface User {
 }
 
 interface SubscriptionPlan {
-  id: string;
+  id: number;
   name: string;
-  price_monthly: number;
+  description: string;
+  price: number;
+  duration_days: number;
+  features: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const Admin = () => {
@@ -115,7 +128,7 @@ const Admin = () => {
           subscription_plans (
             id,
             name,
-            price_monthly
+            price
           )
         `);
 
@@ -138,9 +151,9 @@ const Admin = () => {
           user_subscriptions: userSub ? {
             status: userSub.status,
             plan: {
-              id: userSub.subscription_plans?.id || '',
+              id: userSub.subscription_plans?.id || 0,
               name: userSub.subscription_plans?.name || '',
-              price_monthly: userSub.subscription_plans?.price_monthly || 0
+              price: userSub.subscription_plans?.price || 0
             }
           } : undefined
         };
@@ -162,8 +175,8 @@ const Admin = () => {
     try {
       const { data, error } = await supabase
         .from('subscription_plans')
-        .select('id, name, price_monthly')
-        .order('price_monthly');
+        .select('id, name, price')
+        .order('price');
 
       if (error) {
         console.error('Error fetching plans:', error);
@@ -363,7 +376,7 @@ const Admin = () => {
                             size="sm"
                             onClick={() => {
                               setSelectedUser(user);
-                              setSelectedPlan(user.user_subscriptions?.plan?.id || '');
+                              setSelectedPlan(user.user_subscriptions?.plan?.id.toString() || '');
                             }}
                           >
                             <Edit className="w-4 h-4" />
@@ -389,8 +402,8 @@ const Admin = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {plans.map((plan) => (
-                                    <SelectItem key={plan.id} value={plan.id}>
-                                      {plan.name} - R$ {plan.price_monthly.toFixed(2)}/mês
+                                    <SelectItem key={plan.id} value={plan.id.toString()}>
+                                      {plan.name} - R$ {plan.price.toFixed(2)}/mês
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

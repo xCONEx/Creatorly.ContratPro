@@ -87,7 +87,7 @@ const Settings = () => {
       const { data, error } = await supabase
         .from('user_settings')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
 
       if (error) throw error;
@@ -232,14 +232,14 @@ const Settings = () => {
                 <div className="space-y-2">
                   <Label htmlFor="plan_id">Plano Atual</Label>
                   <Select
-                    value={profile.plan_id !== null ? String(profile.plan_id) : ''}
-                    onValueChange={(value) => setProfile({ ...profile, plan_id: value ? Number(value) : null })}
+                    value={profile.plan_id !== null ? String(profile.plan_id) : 'none'}
+                    onValueChange={(value) => setProfile({ ...profile, plan_id: value !== 'none' ? Number(value) : null })}
                   >
                     <SelectTrigger className="bg-background border-border">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum plano</SelectItem>
+                      <SelectItem value="none">Nenhum plano</SelectItem>
                       {plans.map((plan) => (
                         <SelectItem key={plan.id} value={String(plan.id)}>
                           {plan.name}
@@ -352,7 +352,7 @@ const Settings = () => {
                       {currentPlan.name}
                     </Badge>
                     <p className="text-2xl font-bold text-card-foreground">
-                      R$ {currentPlan.price_monthly.toFixed(2)}
+                      R$ {currentPlan.price.toFixed(2)}
                       <span className="text-sm font-normal text-muted-foreground">/mês</span>
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">{currentPlan.description}</p>

@@ -72,9 +72,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .from('subscription_plans')
             .insert([{
               name: 'Gratuito',
-              price_monthly: 0,
-              price_yearly: 0,
-              max_contracts_per_month: 3
+              price: 0,
+              duration_days: 30,
+              features: '["basic_templates", "pdf_export", "email_support"]'
             }])
             .select('id')
             .single();

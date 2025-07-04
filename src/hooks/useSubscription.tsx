@@ -4,24 +4,25 @@ import { useAuth } from './useAuth';
 import { toast } from './use-toast';
 
 interface SubscriptionPlan {
-  id: string;
+  id: number;
   name: string;
-  description: string;
-  price_monthly: number;
-  price_yearly: number;
-  max_contracts_per_month: number;
-  features: string[];
-  api_access: boolean;
+  description: string | null;
+  price: number;
+  duration_days: number | null;
+  features: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface UserSubscription {
-  id: string;
+  id: number;
   user_id: string;
-  plan_id: string;
-  status: string;
-  started_at: string;
-  expires_at: string | null;
-  trial_ends_at: string | null;
+  plan_id: number;
+  start_date: string;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
   plan: SubscriptionPlan;
 }
 
@@ -70,7 +71,7 @@ export const useSubscription = () => {
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
-        .order('price_monthly');
+        .order('price');
 
       if (error) {
         console.error('Error fetching plans:', error);
@@ -80,7 +81,32 @@ export const useSubscription = () => {
       const transformedPlans = (data || []).map(plan => ({
         ...plan,
         features: Array.isArray(plan.features) ? plan.features : 
-                 typeof plan.features === 'string' ? JSON.parse(plan.features) : []
+                 typeof plan.features === 'string' ? 
+                   (() => {
+                     try {
+                       // Tentar fazer parse do JSON
+                       return JSON.parse(plan.features);
+                     } catch (e) {
+                       // Se falhar, verificar se é texto em português e extrair features
+                       const featuresText = plan.features || '';
+                       const features = [];
+                       
+                       // Extrair features baseadas em palavras-chave
+                       if (featuresText.includes('contrato') || featuresText.includes('Contrato')) features.push('contracts');
+                       if (featuresText.includes('template') || featuresText.includes('Template')) features.push('templates');
+                       if (featuresText.includes('API') || featuresText.includes('api')) features.push('api');
+                       if (featuresText.includes('relatório') || featuresText.includes('Relatório')) features.push('reports');
+                       if (featuresText.includes('assinatura') || featuresText.includes('Assinatura')) features.push('signature');
+                       if (featuresText.includes('notificação') || featuresText.includes('Notificação')) features.push('notifications');
+                       if (featuresText.includes('backup') || featuresText.includes('Backup')) features.push('backup');
+                       if (featuresText.includes('integração') || featuresText.includes('Integração')) features.push('integrations');
+                       if (featuresText.includes('analytics') || featuresText.includes('Analytics')) features.push('analytics');
+                       if (featuresText.includes('suporte') || featuresText.includes('Suporte')) features.push('support');
+                       
+                       console.warn('Failed to parse features JSON, extracted features from text:', featuresText, '->', features);
+                       return features;
+                     }
+                   })() : []
       }));
       
       console.log('Plans fetched successfully:', transformedPlans.length);
@@ -123,7 +149,31 @@ export const useSubscription = () => {
           plan: {
             ...data.plan,
             features: Array.isArray(data.plan.features) ? data.plan.features : 
-                     typeof data.plan.features === 'string' ? JSON.parse(data.plan.features) : []
+                     typeof data.plan.features === 'string' ? 
+                       (() => {
+                         try {
+                           return JSON.parse(data.plan.features);
+                         } catch (e) {
+                           // Se falhar, verificar se é texto em português e extrair features
+                           const featuresText = data.plan.features || '';
+                           const features = [];
+                           
+                           // Extrair features baseadas em palavras-chave
+                           if (featuresText.includes('contrato') || featuresText.includes('Contrato')) features.push('contracts');
+                           if (featuresText.includes('template') || featuresText.includes('Template')) features.push('templates');
+                           if (featuresText.includes('API') || featuresText.includes('api')) features.push('api');
+                           if (featuresText.includes('relatório') || featuresText.includes('Relatório')) features.push('reports');
+                           if (featuresText.includes('assinatura') || featuresText.includes('Assinatura')) features.push('signature');
+                           if (featuresText.includes('notificação') || featuresText.includes('Notificação')) features.push('notifications');
+                           if (featuresText.includes('backup') || featuresText.includes('Backup')) features.push('backup');
+                           if (featuresText.includes('integração') || featuresText.includes('Integração')) features.push('integrations');
+                           if (featuresText.includes('analytics') || featuresText.includes('Analytics')) features.push('analytics');
+                           if (featuresText.includes('suporte') || featuresText.includes('Suporte')) features.push('support');
+                           
+                           console.warn('Failed to parse plan features JSON, extracted features from text:', featuresText, '->', features);
+                           return features;
+                         }
+                       })() : []
           }
         };
         
@@ -156,7 +206,31 @@ export const useSubscription = () => {
             plan: {
               ...retryData.plan,
               features: Array.isArray(retryData.plan.features) ? retryData.plan.features : 
-                       typeof retryData.plan.features === 'string' ? JSON.parse(retryData.plan.features) : []
+                       typeof retryData.plan.features === 'string' ? 
+                         (() => {
+                           try {
+                             return JSON.parse(retryData.plan.features);
+                           } catch (e) {
+                             // Se falhar, verificar se é texto em português e extrair features
+                             const featuresText = retryData.plan.features || '';
+                             const features = [];
+                             
+                             // Extrair features baseadas em palavras-chave
+                             if (featuresText.includes('contrato') || featuresText.includes('Contrato')) features.push('contracts');
+                             if (featuresText.includes('template') || featuresText.includes('Template')) features.push('templates');
+                             if (featuresText.includes('API') || featuresText.includes('api')) features.push('api');
+                             if (featuresText.includes('relatório') || featuresText.includes('Relatório')) features.push('reports');
+                             if (featuresText.includes('assinatura') || featuresText.includes('Assinatura')) features.push('signature');
+                             if (featuresText.includes('notificação') || featuresText.includes('Notificação')) features.push('notifications');
+                             if (featuresText.includes('backup') || featuresText.includes('Backup')) features.push('backup');
+                             if (featuresText.includes('integração') || featuresText.includes('Integração')) features.push('integrations');
+                             if (featuresText.includes('analytics') || featuresText.includes('Analytics')) features.push('analytics');
+                             if (featuresText.includes('suporte') || featuresText.includes('Suporte')) features.push('support');
+                             
+                             console.warn('Failed to parse retry plan features JSON, extracted features from text:', featuresText, '->', features);
+                             return features;
+                           }
+                         })() : []
             }
           };
           setSubscription(transformedRetryData);
@@ -207,7 +281,10 @@ export const useSubscription = () => {
     }
 
     if (feature === 'contracts') {
-      const limit = subscription.plan.max_contracts_per_month;
+      // Usar limite padrão baseado no plano ou permitir ilimitado
+      const planName = subscription.plan.name;
+      const limit = planName === 'Empresarial' ? -1 : 
+                   planName === 'Profissional' ? 100 : 10; // Valores padrão
       
       // Se limit é -1, significa ilimitado
       if (limit === -1) {
@@ -224,13 +301,19 @@ export const useSubscription = () => {
       }
     }
 
-    if (feature === 'api' && !subscription.plan.api_access) {
-      toast({
-        title: "Recurso não disponível",
-        description: "Acesso à API não está disponível no seu plano atual.",
-        variant: "destructive",
-      });
-      return false;
+    if (feature === 'api') {
+      // Verificar se o plano tem acesso à API baseado no nome
+      const planName = subscription.plan.name;
+      const hasApiAccess = planName === 'Profissional' || planName === 'Empresarial';
+      
+      if (!hasApiAccess) {
+        toast({
+          title: "Recurso não disponível",
+          description: "Acesso à API não está disponível no seu plano atual.",
+          variant: "destructive",
+        });
+        return false;
+      }
     }
 
     return true;
@@ -270,7 +353,10 @@ export const useSubscription = () => {
   const getContractLimitText = () => {
     if (!subscription) return 'N/A';
     
-    const limit = subscription.plan.max_contracts_per_month;
+    const planName = subscription.plan.name;
+    const limit = planName === 'Empresarial' ? -1 : 
+                 planName === 'Profissional' ? 100 : 10;
+    
     if (limit === -1) return 'Ilimitado';
     return `${contractCount}/${limit}`;
   };
