@@ -55,18 +55,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (!existingProfile) {
-        // Create new profile
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: user.id,
-            full_name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
-            email: user.email,
-            user_type: 'individual',
-            subscription: 'free'
-          });
+        // Create new profile with only the columns that exist
+        const profileData: any = {
+          id: user.id,
+          full_name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          user_type: 'individual',
+          subscription: 'free'
+        };
 
-        if (error) {
+        // Only add email if the column exists (we'll check this dynamically)
+        try {
+          // Try to insert with email first
+          const { error: emailError } = await supabase
+            .from('user_profiles')
+            .insert({
+              ...profileData,
+              email: user.email
+            });
+
+          if (emailError && emailError.message.includes('email')) {
+            // If email column doesn't exist, try without it
+            console.log('Email column not found, creating profile without email');
+            const { error } = await supabase
+              .from('user_profiles')
+              .insert(profileData);
+
+            if (error) {
+              console.error('Erro ao criar perfil do usuário (sem email):', error);
+            }
+          } else if (emailError) {
+            console.error('Erro ao criar perfil do usuário (com email):', emailError);
+          }
+        } catch (error) {
           console.error('Erro ao criar perfil do usuário:', error);
         }
       }
