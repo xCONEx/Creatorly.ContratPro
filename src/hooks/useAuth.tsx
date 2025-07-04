@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           },
         ]);
         // Se der erro 409 (conflito), ignora
-        if (insertError && insertError.code !== '23505' && insertError.status !== 409) {
+        if (insertError && insertError.code !== '23505' && (insertError as any).status !== 409) {
           console.error('Erro ao criar perfil do usuário:', insertError);
         }
       }
@@ -51,34 +51,91 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Função utilitária para garantir assinatura ativa
     const ensureUserSubscription = async (user: User | null) => {
       if (!user) return;
-      // Busca plano gratuito
-      const { data: plan, error: planError } = await supabase
-        .from('subscription_plans')
-        .select('id')
-        .eq('name', 'Gratuito')
-        .maybeSingle();
-      if (!plan || planError) return;
-      // Verifica se já existe assinatura
-      const { data: sub, error: subError } = await supabase
-        .from('user_subscriptions')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (!sub && !subError) {
-        const { error: insertError } = await supabase.from('user_subscriptions').insert([
-          {
-            user_id: user.id,
-            plan_id: plan.id,
-            status: 'active',
-            started_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ]);
-        // Se der erro 409/23505 (conflito), ignora
-        if (insertError && insertError.code !== '23505') {
-          console.error('Erro ao criar assinatura do usuário:', insertError);
+      
+      try {
+        // Busca plano gratuito
+        const { data: plan, error: planError } = await supabase
+          .from('subscription_plans')
+          .select('id')
+          .eq('name', 'Gratuito')
+          .maybeSingle();
+        
+        if (planError) {
+          console.error('Erro ao buscar plano gratuito:', planError);
+          return;
         }
+        
+        if (!plan) {
+          console.log('Plano gratuito não encontrado, criando...');
+          // Criar plano gratuito se não existir
+          const { data: newPlan, error: createError } = await supabase
+            .from('subscription_plans')
+            .insert([{
+              name: 'Gratuito',
+              price_monthly: 0,
+              price_yearly: 0,
+              max_contracts_per_month: 3
+            }])
+            .select('id')
+            .single();
+          
+          if (createError) {
+            console.error('Erro ao criar plano gratuito:', createError);
+            return;
+          }
+          
+          if (newPlan) {
+            console.log('Plano gratuito criado:', newPlan.id);
+          }
+        }
+        
+        // Verifica se já existe assinatura
+        const { data: sub, error: subError } = await supabase
+          .from('user_subscriptions')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (subError) {
+          console.error('Erro ao verificar assinatura existente:', subError);
+          return;
+        }
+        
+        if (!sub) {
+          // Buscar plano gratuito novamente (pode ter sido criado acima)
+          const { data: finalPlan, error: finalPlanError } = await supabase
+            .from('subscription_plans')
+            .select('id')
+            .eq('name', 'Gratuito')
+            .maybeSingle();
+          
+          if (finalPlanError || !finalPlan) {
+            console.error('Erro ao buscar plano gratuito para assinatura:', finalPlanError);
+            return;
+          }
+          
+          console.log('Criando assinatura gratuita para usuário:', user.id);
+          const { error: insertError } = await supabase.from('user_subscriptions').insert([
+            {
+              user_id: user.id,
+              plan_id: finalPlan.id,
+              status: 'active',
+              started_at: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ]);
+          
+          if (insertError) {
+            console.error('Erro ao criar assinatura do usuário:', insertError);
+          } else {
+            console.log('Assinatura gratuita criada com sucesso');
+          }
+        } else {
+          console.log('Usuário já possui assinatura');
+        }
+      } catch (error) {
+        console.error('Erro geral ao garantir assinatura:', error);
       }
     };
 
