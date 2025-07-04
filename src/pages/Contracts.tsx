@@ -22,32 +22,24 @@ import { toast } from '@/hooks/use-toast';
 import ContractViewModal from '@/components/contract/ContractViewModal';
 import ContractEditModal from '@/components/contract/ContractEditModal';
 import DownloadModal from '@/components/contract/DownloadModal';
-
-interface Contract {
-  id: string;
-  title: string;
-  status: string;
-  created_at: string;
-  total_value?: number;
-  due_date?: string;
-  content: string;
-  client_id: string;
-  clients?: {
-    name: string;
-    email?: string;
-  };
-}
+import { 
+  ContractWithClient, 
+  CONTRACT_STATUS, 
+  getContractStatusLabel, 
+  getContractStatusColor,
+  ContractStatus
+} from '@/integrations/supabase/types-aux';
 
 const Contracts = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [contracts, setContracts] = useState<ContractWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [viewContract, setViewContract] = useState<Contract | null>(null);
-  const [editContract, setEditContract] = useState<Contract | null>(null);
-  const [downloadContract, setDownloadContract] = useState<Contract | null>(null);
+  const [viewContract, setViewContract] = useState<ContractWithClient | null>(null);
+  const [editContract, setEditContract] = useState<ContractWithClient | null>(null);
+  const [downloadContract, setDownloadContract] = useState<ContractWithClient | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -92,7 +84,7 @@ const Contracts = () => {
     }
   };
 
-  const handleStatusUpdate = async (contractId: string, newStatus: 'signed' | 'expired') => {
+  const handleStatusUpdate = async (contractId: number, newStatus: ContractStatus) => {
     try {
       const { error } = await supabase
         .from('contracts')
@@ -106,8 +98,8 @@ const Contracts = () => {
       if (error) throw error;
 
       toast({
-        title: newStatus === 'signed' ? "Contrato assinado!" : "Contrato rejeitado!",
-        description: `O contrato foi ${newStatus === 'signed' ? 'assinado' : 'rejeitado'} com sucesso.`,
+        title: newStatus === CONTRACT_STATUS.COMPLETED ? "Contrato concluído!" : "Status atualizado!",
+        description: `O contrato foi atualizado para ${getContractStatusLabel(newStatus)}.`,
       });
 
       fetchContracts();
@@ -121,9 +113,9 @@ const Contracts = () => {
     }
   };
 
-  const formatContractForExport = (contract: Contract) => {
+  const formatContractForExport = (contract: ContractWithClient) => {
     const currentDate = new Date().toLocaleDateString('pt-BR');
-    const contractNumber = contract.id.slice(0, 8).toUpperCase();
+    const contractNumber = contract.id.toString().slice(0, 8).toUpperCase();
     
     return `
 CONTRATO DE PRESTAÇÃO DE SERVIÇOS
