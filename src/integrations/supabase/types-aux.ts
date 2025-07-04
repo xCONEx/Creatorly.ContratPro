@@ -28,9 +28,9 @@ export type SubscriptionPlan = Database['public']['Tables']['subscription_plans'
 export type SubscriptionPlanInsert = Database['public']['Tables']['subscription_plans']['Insert'];
 export type SubscriptionPlanUpdate = Database['public']['Tables']['subscription_plans']['Update'];
 
-export type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
-export type UserProfileInsert = Database['public']['Tables']['user_profiles']['Insert'];
-export type UserProfileUpdate = Database['public']['Tables']['user_profiles']['Update'];
+export type UserProfile = Database['public']['Tables']['profiles']['Row'];
+export type UserProfileInsert = Database['public']['Tables']['profiles']['Insert'];
+export type UserProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
 export type UserSubscription = Database['public']['Tables']['user_subscriptions']['Row'];
 export type UserSubscriptionInsert = Database['public']['Tables']['user_subscriptions']['Insert'];
@@ -160,8 +160,11 @@ export interface ClientFormData {
 }
 
 export interface UserProfileFormData {
-  full_name: string;
-  avatar_url?: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  address?: string;
 }
 
 export interface UserSettingsFormData {

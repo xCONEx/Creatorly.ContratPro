@@ -19,7 +19,7 @@ interface UserProfile {
   email: string;
   phone: string;
   cpf_cnpj: string;
-  user_type: 'pessoa_fisica' | 'pessoa_juridica';
+  user_type: 'individual' | 'company' | 'agency';
   address: string;
 }
 
@@ -31,7 +31,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
     email: '',
     phone: '',
     cpf_cnpj: '',
-    user_type: 'pessoa_fisica',
+    user_type: 'individual',
     address: ''
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +47,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
     try {
       const { data: profile, error } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
@@ -60,7 +60,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           email: user.email || '',
           phone: '',
           cpf_cnpj: '',
-          user_type: 'pessoa_fisica',
+          user_type: 'individual',
           address: ''
         });
         return;
@@ -71,8 +71,8 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           name: profile.name || '',
           email: profile.email || '',
           phone: profile.phone || '',
-          cpf_cnpj: profile.cpf_cnpj || '',
-          user_type: (profile.user_type as 'pessoa_fisica' | 'pessoa_juridica') || 'pessoa_fisica',
+          cpf_cnpj: profile.company || '',
+          user_type: profile.user_type || 'individual',
           address: profile.address || ''
         });
       } else {
@@ -82,7 +82,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
           email: user.email || '',
           phone: '',
           cpf_cnpj: '',
-          user_type: 'pessoa_fisica',
+          user_type: 'individual',
           address: ''
         });
       }
@@ -93,7 +93,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         email: user.email || '',
         phone: '',
         cpf_cnpj: '',
-        user_type: 'pessoa_fisica',
+        user_type: 'individual',
         address: ''
       });
     }
@@ -106,10 +106,15 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
     setIsLoading(true);
     try {
       const { error: updateError } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .upsert({
           id: user.id,
-          ...profile,
+          email: profile.email,
+          name: profile.name,
+          phone: profile.phone,
+          company: profile.cpf_cnpj,
+          user_type: profile.user_type,
+          address: profile.address,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'id'
@@ -189,7 +194,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                 <p className="text-xs text-slate-500">
                   {profile.email}
                 </p>
-                {profile.user_type === 'pessoa_juridica' && (
+                {profile.user_type === 'company' && (
                   <div className="flex items-center justify-end space-x-1 mt-1">
                     <Building2 className="w-3 h-3 text-blue-600" />
                     <span className="text-xs text-blue-600">Empresarial</span>
@@ -211,10 +216,10 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleSignOut}
-                  className="text-slate-500 hover:text-slate-700"
+                  onClick={() => setIsProfileOpen(false)}
+                  className="w-full"
                 >
-                  <LogOut className="w-4 h-4" />
+                  Cancelar
                 </Button>
               </div>
             </div>
@@ -273,7 +278,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                 <Label htmlFor="user_type">Tipo de conta</Label>
                 <Select
                   value={profile.user_type}
-                  onValueChange={(value: 'pessoa_fisica' | 'pessoa_juridica') => 
+                  onValueChange={(value: 'individual' | 'company' | 'agency') => 
                     setProfile({ ...profile, user_type: value })
                   }
                 >
@@ -281,13 +286,13 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pessoa_fisica">
+                    <SelectItem value="individual">
                       <div className="flex items-center space-x-2">
                         <Users className="w-4 h-4" />
                         <span>Pessoa Física</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="pessoa_juridica">
+                    <SelectItem value="company">
                       <div className="flex items-center space-x-2">
                         <Building2 className="w-4 h-4" />
                         <span>Pessoa Jurídica</span>
@@ -300,13 +305,13 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="cpf_cnpj">
-                {profile.user_type === 'pessoa_fisica' ? 'CPF' : 'CNPJ'}
+                {profile.user_type === 'individual' ? 'CPF' : 'CNPJ'}
               </Label>
               <Input
                 id="cpf_cnpj"
                 value={profile.cpf_cnpj}
                 onChange={(e) => setProfile({ ...profile, cpf_cnpj: e.target.value })}
-                placeholder={profile.user_type === 'pessoa_fisica' ? '000.000.000-00' : '00.000.000/0000-00'}
+                placeholder={profile.user_type === 'individual' ? '000.000.000-00' : '00.000.000/0000-00'}
               />
             </div>
 
@@ -322,13 +327,18 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button
-                type="button"
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => setIsProfileOpen(false)}
+                className="w-full"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button
+                variant="default"
+                size="sm"
+                disabled={isLoading}
+              >
                 {isLoading ? 'Salvando...' : 'Salvar'}
               </Button>
             </div>

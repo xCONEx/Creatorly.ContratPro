@@ -27,34 +27,108 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          name: string | null
+          phone: string | null
+          company: string | null
+          logo_base64: string | null
+          image_user: string | null
+          user_type: Database['public']['Enums']['user_type']
+          banned: boolean
+          agency_id: string | null
+          role: Database['public']['Enums']['agency_role']
+          created_at: string | null
+          updated_at: string | null
+          subscription: Database['public']['Enums']['subscription_type']
+          subscription_data: Json | null
+          subscription_given_by_agency: boolean
+          address: string | null
+        }
+        Insert: {
+          id: string
+          email: string
+          name?: string | null
+          phone?: string | null
+          company?: string | null
+          logo_base64?: string | null
+          image_user?: string | null
+          user_type?: Database['public']['Enums']['user_type']
+          banned?: boolean
+          agency_id?: string | null
+          role?: Database['public']['Enums']['agency_role']
+          created_at?: string | null
+          updated_at?: string | null
+          subscription?: Database['public']['Enums']['subscription_type']
+          subscription_data?: Json | null
+          subscription_given_by_agency?: boolean
+          address?: string | null
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string | null
+          phone?: string | null
+          company?: string | null
+          logo_base64?: string | null
+          image_user?: string | null
+          user_type?: Database['public']['Enums']['user_type']
+          banned?: boolean
+          agency_id?: string | null
+          role?: Database['public']['Enums']['agency_role']
+          created_at?: string | null
+          updated_at?: string | null
+          subscription?: Database['public']['Enums']['subscription_type']
+          subscription_data?: Json | null
+          subscription_given_by_agency?: boolean
+          address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       subscription_plans: {
         Row: {
-          id: number
+          id: string
           name: string
           description: string | null
-          price: number
-          duration_days: number | null
-          features: string | null
+          price_monthly: number
+          price_yearly: number
+          max_contracts_per_month: number
+          features: Json
+          api_access: boolean
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          id?: number
+          id?: string
           name: string
           description?: string | null
-          price?: number
-          duration_days?: number | null
-          features?: string | null
+          price_monthly?: number
+          price_yearly?: number
+          max_contracts_per_month?: number
+          features?: Json
+          api_access?: boolean
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          id?: number
+          id?: string
           name?: string
           description?: string | null
-          price?: number
-          duration_days?: number | null
-          features?: string | null
+          price_monthly?: number
+          price_yearly?: number
+          max_contracts_per_month?: number
+          features?: Json
+          api_access?: boolean
           created_at?: string | null
           updated_at?: string | null
         }
@@ -104,32 +178,35 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
-          id: number
+          id: string
           user_id: string
-          plan_id: number
-          start_date: string
-          end_date: string | null
-          is_active: boolean
+          plan_id: string
+          status: string
+          started_at: string | null
+          expires_at: string | null
+          trial_ends_at: string | null
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
-          plan_id: number
-          start_date?: string
-          end_date?: string | null
-          is_active?: boolean
+          plan_id: string
+          status?: string
+          started_at?: string | null
+          expires_at?: string | null
+          trial_ends_at?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
-          plan_id?: number
-          start_date?: string
-          end_date?: string | null
-          is_active?: boolean
+          plan_id?: string
+          status?: string
+          started_at?: string | null
+          expires_at?: string | null
+          trial_ends_at?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -153,32 +230,44 @@ export type Database = {
       user_settings: {
         Row: {
           id: string
-          theme: string
+          user_id: string
           notifications_enabled: boolean
+          email_notifications: boolean
+          contract_reminders: boolean
+          theme: string
           language: string
+          timezone: string
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          id: string
-          theme?: string
+          id?: string
+          user_id: string
           notifications_enabled?: boolean
+          email_notifications?: boolean
+          contract_reminders?: boolean
+          theme?: string
           language?: string
+          timezone?: string
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
           id?: string
-          theme?: string
+          user_id?: string
           notifications_enabled?: boolean
+          email_notifications?: boolean
+          contract_reminders?: boolean
+          theme?: string
           language?: string
+          timezone?: string
           created_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "user_settings_id_fkey"
-            columns: ["id"]
+            foreignKeyName: "user_settings_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -187,37 +276,49 @@ export type Database = {
       }
       clients: {
         Row: {
-          id: number
+          id: string
           user_id: string
+          company_id: string | null
           name: string
-          email: string | null
           phone: string | null
+          email: string | null
           address: string | null
-          origin: Database['public']['Enums']['client_origin']
+          cnpj: string | null
+          description: string | null
           created_at: string | null
           updated_at: string | null
+          user_email: string | null
+          origin: string
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
+          company_id?: string | null
           name: string
-          email?: string | null
           phone?: string | null
+          email?: string | null
           address?: string | null
-          origin: Database['public']['Enums']['client_origin']
+          cnpj?: string | null
+          description?: string | null
           created_at?: string | null
           updated_at?: string | null
+          user_email?: string | null
+          origin?: string
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
+          company_id?: string | null
           name?: string
-          email?: string | null
           phone?: string | null
+          email?: string | null
           address?: string | null
-          origin?: Database['public']['Enums']['client_origin']
+          cnpj?: string | null
+          description?: string | null
           created_at?: string | null
           updated_at?: string | null
+          user_email?: string | null
+          origin?: string
         }
         Relationships: [
           {
@@ -231,82 +332,107 @@ export type Database = {
       }
       contract_templates: {
         Row: {
-          id: number
-          user_id: string | null
+          id: string
           name: string
+          description: string | null
           content: string
+          category: string | null
+          variables: Json
+          is_default: boolean
           is_public: boolean
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          id?: number
-          user_id?: string | null
+          id?: string
           name: string
+          description?: string | null
           content: string
+          category?: string | null
+          variables?: Json
+          is_default?: boolean
           is_public?: boolean
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          id?: number
-          user_id?: string | null
+          id?: string
           name?: string
+          description?: string | null
           content?: string
+          category?: string | null
+          variables?: Json
+          is_default?: boolean
           is_public?: boolean
           created_at?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "contract_templates_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       contracts: {
         Row: {
-          id: number
+          id: string
+          client_id: string
           user_id: string
-          client_id: number
-          template_id: number | null
           title: string
-          content: string
-          total_value: number
-          due_date: string
-          status: Database['public']['Enums']['contract_status']
+          description: string | null
+          content: string | null
+          value: number
+          start_date: string | null
+          end_date: string | null
+          status: string
+          contract_file_url: string | null
+          contract_file_name: string | null
+          signature_token: string | null
           signed_at: string | null
+          sent_at: string | null
+          expires_at: string | null
+          due_date: string | null
+          total_value: number
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          id?: number
+          id?: string
+          client_id: string
           user_id: string
-          client_id: number
-          template_id?: number | null
           title: string
-          content: string
-          total_value: number
-          due_date: string
-          status: Database['public']['Enums']['contract_status']
+          description?: string | null
+          content?: string | null
+          value?: number
+          start_date?: string | null
+          end_date?: string | null
+          status?: string
+          contract_file_url?: string | null
+          contract_file_name?: string | null
+          signature_token?: string | null
           signed_at?: string | null
+          sent_at?: string | null
+          expires_at?: string | null
+          due_date?: string | null
+          total_value?: number
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          id?: number
+          id?: string
+          client_id?: string
           user_id?: string
-          client_id?: number
-          template_id?: number | null
           title?: string
-          content?: string
-          total_value?: number
-          due_date?: string
-          status?: Database['public']['Enums']['contract_status']
+          description?: string | null
+          content?: string | null
+          value?: number
+          start_date?: string | null
+          end_date?: string | null
+          status?: string
+          contract_file_url?: string | null
+          contract_file_name?: string | null
+          signature_token?: string | null
           signed_at?: string | null
+          sent_at?: string | null
+          expires_at?: string | null
+          due_date?: string | null
+          total_value?: number
           created_at?: string | null
           updated_at?: string | null
         }
@@ -324,43 +450,30 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contracts_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "contract_templates"
-            referencedColumns: ["id"]
           }
         ]
       }
       contract_events: {
         Row: {
-          id: number
-          contract_id: number
+          id: string
+          contract_id: string | null
           event_type: string
-          description: string | null
-          event_timestamp: string
+          event_data: Json | null
           created_at: string | null
-          updated_at: string | null
         }
         Insert: {
-          id?: number
-          contract_id: number
+          id?: string
+          contract_id?: string | null
           event_type: string
-          description?: string | null
-          event_timestamp?: string
+          event_data?: Json | null
           created_at?: string | null
-          updated_at?: string | null
         }
         Update: {
-          id?: number
-          contract_id?: number
+          id?: string
+          contract_id?: string | null
           event_type?: string
-          description?: string | null
-          event_timestamp?: string
+          event_data?: Json | null
           created_at?: string | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -374,35 +487,32 @@ export type Database = {
       }
       notifications: {
         Row: {
-          id: number
+          id: string
           user_id: string
-          contract_id: number | null
           title: string
           message: string
+          type: string
           is_read: boolean
-          notification_type: string | null
           created_at: string | null
           updated_at: string | null
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
-          contract_id?: number | null
           title: string
           message: string
+          type?: string
           is_read?: boolean
-          notification_type?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
-          contract_id?: number | null
           title?: string
           message?: string
+          type?: string
           is_read?: boolean
-          notification_type?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -413,46 +523,36 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
           }
         ]
       }
       reports: {
         Row: {
-          id: number
+          id: string
           user_id: string
-          report_type: string
-          parameters: string | null
-          file_url: string | null
-          generated_at: string
+          title: string
+          type: string
+          data: Json
+          generated_at: string | null
           created_at: string | null
-          updated_at: string | null
         }
         Insert: {
-          id?: number
+          id?: string
           user_id: string
-          report_type: string
-          parameters?: string | null
-          file_url?: string | null
-          generated_at?: string
+          title: string
+          type: string
+          data?: Json
+          generated_at?: string | null
           created_at?: string | null
-          updated_at?: string | null
         }
         Update: {
-          id?: number
+          id?: string
           user_id?: string
-          report_type?: string
-          parameters?: string | null
-          file_url?: string | null
-          generated_at?: string
+          title?: string
+          type?: string
+          data?: Json
+          generated_at?: string | null
           created_at?: string | null
-          updated_at?: string | null
         }
         Relationships: [
           {
@@ -474,6 +574,9 @@ export type Database = {
     Enums: {
       client_origin: 'manual' | 'financeflow' | 'import'
       contract_status: 'pending' | 'active' | 'completed' | 'cancelled' | 'expired'
+      user_type: 'individual' | 'company' | 'agency'
+      agency_role: 'owner' | 'admin' | 'editor' | 'viewer' | 'member'
+      subscription_type: 'free' | 'basic' | 'premium' | 'enterprise' | 'pro' | 'business' | 'annual' | 'monthly'
     }
     CompositeTypes: {
       [_ in never]: never
