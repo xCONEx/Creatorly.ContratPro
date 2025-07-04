@@ -207,11 +207,12 @@ export const useFinanceFlowSync = () => {
   useEffect(() => {
     console.log('useFinanceFlowSync: User email detected:', user?.email);
     if (user?.email) {
-      // Aguardar um pouco para deixar o trigger criar o perfil primeiro
-      setTimeout(() => {
-        console.log('useFinanceFlowSync: Starting auto-sync...');
-        autoSync();
-      }, 2000);
+      // Desabilitar auto-sync temporariamente para evitar conflitos
+      console.log('useFinanceFlowSync: Auto-sync disabled temporarily');
+      // setTimeout(() => {
+      //   console.log('useFinanceFlowSync: Starting auto-sync...');
+      //   autoSync();
+      // }, 2000);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email]);
