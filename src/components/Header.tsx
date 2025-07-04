@@ -1,40 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Bell, Menu, LogOut, User, Building2, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-
-interface HeaderProps {
-  onMenuToggle: () => void;
-}
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface UserProfile {
-  name: string;
+  full_name: string;
   email: string;
   phone: string;
-  cpf_cnpj: string;
+  company: string;
   user_type: 'individual' | 'company' | 'agency';
-  address: string;
+  subscription: string;
 }
 
-const Header = ({ onMenuToggle }: HeaderProps) => {
+export default function Header() {
   const { user, signOut } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
-    name: '',
+    full_name: '',
     email: '',
     phone: '',
-    cpf_cnpj: '',
+    company: '',
     user_type: 'individual',
-    address: ''
+    subscription: 'free'
   });
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -47,7 +44,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
     try {
       const { data: profile, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
@@ -56,85 +53,66 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         console.error('Error fetching profile:', error);
         // Usar dados do user como fallback
         setProfile({
-          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          full_name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
           email: user.email || '',
           phone: '',
-          cpf_cnpj: '',
+          company: '',
           user_type: 'individual',
-          address: ''
+          subscription: 'free'
         });
         return;
       }
 
       if (profile) {
         setProfile({
-          name: profile.name || '',
+          full_name: profile.full_name || '',
           email: profile.email || '',
           phone: profile.phone || '',
-          cpf_cnpj: profile.company || '',
-          user_type: profile.user_type || 'individual',
-          address: profile.address || ''
+          company: profile.company || '',
+          user_type: (profile.user_type as 'individual' | 'company' | 'agency') || 'individual',
+          subscription: profile.subscription || 'free'
         });
       } else {
         // Se não existe perfil, usar dados do user
         setProfile({
-          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          full_name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
           email: user.email || '',
           phone: '',
-          cpf_cnpj: '',
+          company: '',
           user_type: 'individual',
-          address: ''
+          subscription: 'free'
         });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      setProfile({
-        name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
-        email: user.email || '',
-        phone: '',
-        cpf_cnpj: '',
-        user_type: 'individual',
-        address: ''
-      });
     }
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleProfileUpdate = async () => {
     if (!user) return;
 
     setIsLoading(true);
     try {
-      const { error: updateError } = await supabase
-        .from('profiles')
+      const { error } = await supabase
+        .from('user_profiles')
         .upsert({
           id: user.id,
+          full_name: profile.full_name,
           email: profile.email,
-          name: profile.name,
           phone: profile.phone,
-          company: profile.cpf_cnpj,
+          company: profile.company,
           user_type: profile.user_type,
-          address: profile.address,
+          subscription: profile.subscription,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
         });
 
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Perfil atualizado",
-        description: "Suas informações foram salvas com sucesso.",
-      });
-      
-      setIsProfileOpen(false);
+      if (error) {
+        console.error('Error updating profile:', error);
+      } else {
+        setIsProfileOpen(false);
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o perfil.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -144,209 +122,128 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
     await signOut();
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getAvatarUrl = () => {
-    if (user?.user_metadata?.avatar_url) {
-      return user.user_metadata.avatar_url;
-    }
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'default'}`;
-  };
-
   return (
-    <>
-      <header className="bg-white border-b border-slate-200 px-4 py-3">
-        <div className="flex items-center justify-between">
+    <header className="bg-white border-b border-gray-200 px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-semibold text-gray-900">ContratPro</h1>
+        </div>
+
+        {user && (
           <div className="flex items-center space-x-4">
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">{profile.full_name}</span>
+              <span className="mx-2">•</span>
+              <span>{profile.subscription}</span>
+            </div>
+
             <Button
               variant="ghost"
               size="sm"
-              onClick={onMenuToggle}
-              className="lg:hidden"
+              onClick={() => setIsProfileOpen(true)}
             >
-              <Menu className="w-5 h-5" />
+              Perfil
             </Button>
-            
-            <div className="hidden lg:block">
-              <h2 className="text-xl font-semibold text-slate-800">
-                Bem-vindo, {profile.name || 'Usuário'}
-              </h2>
-            </div>
-          </div>
 
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              <Bell className="w-5 h-5" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="text-slate-500 hover:text-slate-700"
+            >
+              Sair
             </Button>
-            
-            <div className="flex items-center space-x-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium text-slate-900">
-                  {profile.name || 'Usuário'}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {profile.email}
-                </p>
-                {profile.user_type === 'company' && (
-                  <div className="flex items-center justify-end space-x-1 mt-1">
-                    <Building2 className="w-3 h-3 text-blue-600" />
-                    <span className="text-xs text-blue-600">Empresarial</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Avatar 
-                  className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-blue-200 transition-all"
-                  onClick={() => setIsProfileOpen(true)}
-                >
-                  <AvatarImage src={getAvatarUrl()} />
-                  <AvatarFallback className="bg-blue-100 text-blue-600">
-                    {getInitials(profile.name || 'U')}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsProfileOpen(false)}
-                  className="w-full"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
           </div>
-        </div>
-      </header>
+        )}
+      </div>
 
-      {/* Profile Edit Modal */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <User className="w-5 h-5" />
-              <span>Editar Perfil</span>
-            </DialogTitle>
+            <DialogTitle>Editar Perfil</DialogTitle>
           </DialogHeader>
-          
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome completo *</Label>
-                <Input
-                  id="name"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  placeholder="Seu nome completo"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                  placeholder="seu@email.com"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  placeholder="(11) 99999-9999"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="user_type">Tipo de conta</Label>
-                <Select
-                  value={profile.user_type}
-                  onValueChange={(value: 'individual' | 'company' | 'agency') => 
-                    setProfile({ ...profile, user_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="individual">
-                      <div className="flex items-center space-x-2">
-                        <Users className="w-4 h-4" />
-                        <span>Pessoa Física</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="company">
-                      <div className="flex items-center space-x-2">
-                        <Building2 className="w-4 h-4" />
-                        <span>Pessoa Jurídica</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cpf_cnpj">
-                {profile.user_type === 'individual' ? 'CPF' : 'CNPJ'}
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Nome
               </Label>
               <Input
-                id="cpf_cnpj"
-                value={profile.cpf_cnpj}
-                onChange={(e) => setProfile({ ...profile, cpf_cnpj: e.target.value })}
-                placeholder={profile.user_type === 'individual' ? '000.000.000-00' : '00.000.000/0000-00'}
+                id="name"
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                className="col-span-3"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">
+                Email
+              </Label>
               <Input
-                id="address"
-                value={profile.address}
-                onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                placeholder="Endereço completo"
+                id="email"
+                type="email"
+                value={profile.email}
+                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                className="col-span-3"
               />
             </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsProfileOpen(false)}
-                className="w-full"
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Salvando...' : 'Salvar'}
-              </Button>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="phone" className="text-right">
+                Telefone
+              </Label>
+              <Input
+                id="phone"
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="col-span-3"
+              />
             </div>
-          </form>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="company" className="text-right">
+                Empresa
+              </Label>
+              <Input
+                id="company"
+                value={profile.company}
+                onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="user_type" className="text-right">
+                Tipo
+              </Label>
+              <select
+                id="user_type"
+                value={profile.user_type}
+                onChange={(e) => setProfile({ ...profile, user_type: e.target.value as 'individual' | 'company' | 'agency' })}
+                className="col-span-3 border border-gray-300 rounded-md px-3 py-2"
+              >
+                <option value="individual">Pessoa Física</option>
+                <option value="company">Empresa</option>
+                <option value="agency">Agência</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsProfileOpen(false)}
+              className="w-full"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              disabled={isLoading}
+              onClick={handleProfileUpdate}
+            >
+              {isLoading ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
-    </>
+    </header>
   );
-};
-
-export default Header;
+}
