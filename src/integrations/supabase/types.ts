@@ -9,60 +9,358 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      clients: {
+      users: {
         Row: {
-          address: string | null
-          cpf_cnpj: string | null
-          created_at: string | null
-          email: string | null
           id: string
-          name: string
-          phone: string | null
-          user_id: string
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          address?: string | null
-          cpf_cnpj?: string | null
+          id: string
           created_at?: string | null
-          email?: string | null
-          id?: string
-          name: string
-          phone?: string | null
-          user_id: string
+          updated_at?: string | null
         }
         Update: {
-          address?: string | null
-          cpf_cnpj?: string | null
-          created_at?: string | null
-          email?: string | null
           id?: string
-          name?: string
-          phone?: string | null
-          user_id?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
-      contract_events: {
+      subscription_plans: {
         Row: {
-          contract_id: string | null
+          id: number
+          name: string
+          description: string | null
+          price: number
+          duration_days: number | null
+          features: string | null
           created_at: string | null
-          event_data: Json | null
-          event_type: string
-          id: string
+          updated_at: string | null
         }
         Insert: {
-          contract_id?: string | null
+          id?: number
+          name: string
+          description?: string | null
+          price?: number
+          duration_days?: number | null
+          features?: string | null
           created_at?: string | null
-          event_data?: Json | null
-          event_type: string
-          id?: string
+          updated_at?: string | null
         }
         Update: {
-          contract_id?: string | null
+          id?: number
+          name?: string
+          description?: string | null
+          price?: number
+          duration_days?: number | null
+          features?: string | null
           created_at?: string | null
-          event_data?: Json | null
-          event_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          id: string
+          full_name: string | null
+          avatar_url: string | null
+          plan_id: number | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id: string
+          full_name?: string | null
+          avatar_url?: string | null
+          plan_id?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
           id?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          plan_id?: number | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profiles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_subscriptions: {
+        Row: {
+          id: number
+          user_id: string
+          plan_id: number
+          start_date: string
+          end_date: string | null
+          is_active: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          plan_id: number
+          start_date?: string
+          end_date?: string | null
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          plan_id?: number
+          start_date?: string
+          end_date?: string | null
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_settings: {
+        Row: {
+          id: string
+          theme: string
+          notifications_enabled: boolean
+          language: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id: string
+          theme?: string
+          notifications_enabled?: boolean
+          language?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          theme?: string
+          notifications_enabled?: boolean
+          language?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      clients: {
+        Row: {
+          id: number
+          user_id: string
+          name: string
+          email: string | null
+          phone: string | null
+          address: string | null
+          origin: Database['public']['Enums']['client_origin']
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          name: string
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          origin: Database['public']['Enums']['client_origin']
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          name?: string
+          email?: string | null
+          phone?: string | null
+          address?: string | null
+          origin?: Database['public']['Enums']['client_origin']
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      contract_templates: {
+        Row: {
+          id: number
+          user_id: string | null
+          name: string
+          content: string
+          is_public: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id?: string | null
+          name: string
+          content: string
+          is_public?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string | null
+          name?: string
+          content?: string
+          is_public?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      contracts: {
+        Row: {
+          id: number
+          user_id: string
+          client_id: number
+          template_id: number | null
+          title: string
+          content: string
+          total_value: number
+          due_date: string
+          status: Database['public']['Enums']['contract_status']
+          signed_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          client_id: number
+          template_id?: number | null
+          title: string
+          content: string
+          total_value: number
+          due_date: string
+          status: Database['public']['Enums']['contract_status']
+          signed_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          client_id?: number
+          template_id?: number | null
+          title?: string
+          content?: string
+          total_value?: number
+          due_date?: string
+          status?: Database['public']['Enums']['contract_status']
+          signed_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      contract_events: {
+        Row: {
+          id: number
+          contract_id: number
+          event_type: string
+          description: string | null
+          event_timestamp: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          contract_id: number
+          event_type: string
+          description?: string | null
+          event_timestamp?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number
+          contract_id?: number
+          event_type?: string
+          description?: string | null
+          event_timestamp?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -71,342 +369,99 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      contract_templates: {
-        Row: {
-          category: string | null
-          content: string
-          created_at: string | null
-          description: string | null
-          id: string
-          is_default: boolean | null
-          is_public: boolean | null
-          name: string
-          variables: Json
-        }
-        Insert: {
-          category?: string | null
-          content: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_default?: boolean | null
-          is_public?: boolean | null
-          name: string
-          variables?: Json
-        }
-        Update: {
-          category?: string | null
-          content?: string
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_default?: boolean | null
-          is_public?: boolean | null
-          name?: string
-          variables?: Json
-        }
-        Relationships: []
-      }
-      contracts: {
-        Row: {
-          client_id: string
-          content: string
-          created_at: string | null
-          due_date: string | null
-          expires_at: string | null
-          id: string
-          sent_at: string | null
-          signature_token: string | null
-          signed_at: string | null
-          status: string | null
-          title: string
-          total_value: number | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          client_id: string
-          content: string
-          created_at?: string | null
-          due_date?: string | null
-          expires_at?: string | null
-          id?: string
-          sent_at?: string | null
-          signature_token?: string | null
-          signed_at?: string | null
-          status?: string | null
-          title: string
-          total_value?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          client_id?: string
-          content?: string
-          created_at?: string | null
-          due_date?: string | null
-          expires_at?: string | null
-          id?: string
-          sent_at?: string | null
-          signature_token?: string | null
-          signed_at?: string | null
-          status?: string | null
-          title?: string
-          total_value?: number | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_contract_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
+          }
         ]
       }
       notifications: {
         Row: {
-          contract_id: string | null
-          created_at: string | null
-          id: string
-          message: string
-          read: boolean | null
+          id: number
+          user_id: string
+          contract_id: number | null
           title: string
-          type: string
-          user_id: string | null
+          message: string
+          is_read: boolean
+          notification_type: string | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          contract_id?: string | null
-          created_at?: string | null
-          id?: string
-          message: string
-          read?: boolean | null
+          id?: number
+          user_id: string
+          contract_id?: number | null
           title: string
-          type: string
-          user_id?: string | null
+          message: string
+          is_read?: boolean
+          notification_type?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          contract_id?: string | null
-          created_at?: string | null
-          id?: string
-          message?: string
-          read?: boolean | null
+          id?: number
+          user_id?: string
+          contract_id?: number | null
           title?: string
-          type?: string
-          user_id?: string | null
+          message?: string
+          is_read?: boolean
+          notification_type?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_contract_id_fkey"
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       reports: {
         Row: {
-          created_at: string | null
-          data: Json
-          generated_at: string | null
-          id: string
-          title: string
-          type: string
+          id: number
           user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          data?: Json
-          generated_at?: string | null
-          id?: string
-          title: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          data?: Json
-          generated_at?: string | null
-          id?: string
-          title?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      subscription_plans: {
-        Row: {
-          api_access: boolean | null
+          report_type: string
+          parameters: string | null
+          file_url: string | null
+          generated_at: string
           created_at: string | null
-          description: string | null
-          features: Json | null
-          id: string
-          max_contracts_per_month: number | null
-          name: string
-          price_monthly: number | null
-          price_yearly: number | null
-        }
-        Insert: {
-          api_access?: boolean | null
-          created_at?: string | null
-          description?: string | null
-          features?: Json | null
-          id?: string
-          max_contracts_per_month?: number | null
-          name: string
-          price_monthly?: number | null
-          price_yearly?: number | null
-        }
-        Update: {
-          api_access?: boolean | null
-          created_at?: string | null
-          description?: string | null
-          features?: Json | null
-          id?: string
-          max_contracts_per_month?: number | null
-          name?: string
-          price_monthly?: number | null
-          price_yearly?: number | null
-        }
-        Relationships: []
-      }
-      user_profiles: {
-        Row: {
-          address: string | null
-          cpf_cnpj: string | null
-          created_at: string | null
-          email: string
-          id: string
-          name: string
-          phone: string | null
-          subscription_plan_id: string | null
           updated_at: string | null
-          user_id: string
-          user_type: string | null
         }
         Insert: {
-          address?: string | null
-          cpf_cnpj?: string | null
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string
-          phone?: string | null
-          subscription_plan_id?: string | null
-          updated_at?: string | null
+          id?: number
           user_id: string
-          user_type?: string | null
+          report_type: string
+          parameters?: string | null
+          file_url?: string | null
+          generated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          address?: string | null
-          cpf_cnpj?: string | null
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string
-          phone?: string | null
-          subscription_plan_id?: string | null
-          updated_at?: string | null
+          id?: number
           user_id?: string
-          user_type?: string | null
+          report_type?: string
+          parameters?: string | null
+          file_url?: string | null
+          generated_at?: string
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "user_profiles_subscription_plan_id_fkey"
-            columns: ["subscription_plan_id"]
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "subscription_plans"
+            referencedRelation: "users"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_settings: {
-        Row: {
-          contract_reminders: boolean | null
-          created_at: string | null
-          email_notifications: boolean | null
-          id: string
-          language: string | null
-          notifications_enabled: boolean | null
-          theme: string | null
-          timezone: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          contract_reminders?: boolean | null
-          created_at?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          language?: string | null
-          notifications_enabled?: boolean | null
-          theme?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          contract_reminders?: boolean | null
-          created_at?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          language?: string | null
-          notifications_enabled?: boolean | null
-          theme?: string | null
-          timezone?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_subscriptions: {
-        Row: {
-          created_at: string | null
-          expires_at: string | null
-          id: string
-          plan_id: string
-          started_at: string | null
-          status: string | null
-          trial_ends_at: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          plan_id: string
-          started_at?: string | null
-          status?: string | null
-          trial_ends_at?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          plan_id?: string
-          started_at?: string | null
-          status?: string | null
-          trial_ends_at?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_subscriptions_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "subscription_plans"
-            referencedColumns: ["id"]
-          },
+          }
         ]
       }
     }
@@ -414,17 +469,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_old_notifications: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      handle_expired_contracts: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      client_origin: 'manual' | 'financeflow' | 'import'
+      contract_status: 'pending' | 'active' | 'completed' | 'cancelled' | 'expired'
     }
     CompositeTypes: {
       [_ in never]: never
