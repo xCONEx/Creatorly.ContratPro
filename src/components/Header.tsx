@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -47,10 +46,10 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
 
       if (error) {
@@ -67,14 +66,14 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
         return;
       }
 
-      if (data) {
+      if (profile) {
         setProfile({
-          name: data.name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          cpf_cnpj: data.cpf_cnpj || '',
-          user_type: (data.user_type as 'pessoa_fisica' | 'pessoa_juridica') || 'pessoa_fisica',
-          address: data.address || ''
+          name: profile.name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          cpf_cnpj: profile.cpf_cnpj || '',
+          user_type: (profile.user_type as 'pessoa_fisica' | 'pessoa_juridica') || 'pessoa_fisica',
+          address: profile.address || ''
         });
       } else {
         // Se não existe perfil, usar dados do user
@@ -106,17 +105,17 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('user_profiles')
         .upsert({
-          user_id: user.id,
+          id: user.id,
           ...profile,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'user_id'
+          onConflict: 'id'
         });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast({
         title: "Perfil atualizado",

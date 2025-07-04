@@ -26,15 +26,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!user) return;
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('user_id')
-        .eq('user_id', user.id)
+        .select('id')
+        .eq('id', user.id)
         .maybeSingle();
 
       // Só insere se não encontrou o perfil
       if (!data && !error) {
         const { error: insertError } = await supabase.from('user_profiles').insert([
           {
-            user_id: user.id,
+            id: user.id,
             email: user.email,
             name: user.user_metadata?.full_name || user.email,
             created_at: new Date().toISOString(),

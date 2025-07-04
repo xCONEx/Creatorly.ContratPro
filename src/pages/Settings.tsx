@@ -14,39 +14,35 @@ import { toast } from '@/hooks/use-toast';
 import { User, Settings as SettingsIcon, Bell, Crown, Building2, Users } from 'lucide-react';
 
 interface UserProfile {
-  name: string;
-  email: string;
-  phone: string;
-  cpf_cnpj: string;
-  user_type: 'pessoa_fisica' | 'pessoa_juridica';
-  address: string;
+  full_name: string;
+  avatar_url: string;
+  plan_id: number | null;
 }
 
 interface UserSettings {
-  notifications_enabled: boolean;
-  email_notifications: boolean;
+  id: string;
   theme: 'light' | 'dark' | 'system';
+  notifications_enabled: boolean;
   language: string;
-  timezone: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const Settings = () => {
   const { user } = useAuth();
   const { subscription, plans, contractCount } = useSubscription();
   const [profile, setProfile] = useState<UserProfile>({
-    name: '',
-    email: '',
-    phone: '',
-    cpf_cnpj: '',
-    user_type: 'pessoa_fisica',
-    address: ''
+    full_name: '',
+    avatar_url: '',
+    plan_id: null,
   });
   const [settings, setSettings] = useState<UserSettings>({
-    notifications_enabled: true,
-    email_notifications: true,
+    id: '',
     theme: 'light',
+    notifications_enabled: true,
     language: 'pt-BR',
-    timezone: 'America/Sao_Paulo'
+    created_at: '',
+    updated_at: ''
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,21 +57,22 @@ const Settings = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
-
-      if (error) throw error;
-      if (data) {
+      if (profile) {
         setProfile({
-          name: data.name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          cpf_cnpj: data.cpf_cnpj || '',
-          user_type: (data.user_type as 'pessoa_fisica' | 'pessoa_juridica') || 'pessoa_fisica',
-          address: data.address || ''
+          full_name: profile.full_name || '',
+          avatar_url: profile.avatar_url || '',
+          plan_id: profile.plan_id ?? null,
+        });
+      } else {
+        setProfile({
+          full_name: '',
+          avatar_url: '',
+          plan_id: null,
         });
       }
     } catch (error) {
@@ -96,11 +93,12 @@ const Settings = () => {
       if (error) throw error;
       if (data) {
         setSettings({
-          notifications_enabled: data.notifications_enabled ?? true,
-          email_notifications: data.email_notifications ?? true,
+          id: data.id || '',
           theme: (data.theme as 'light' | 'dark' | 'system') || 'light',
+          notifications_enabled: data.notifications_enabled ?? true,
           language: data.language || 'pt-BR',
-          timezone: data.timezone || 'America/Sao_Paulo'
+          created_at: data.created_at || '',
+          updated_at: data.updated_at || ''
         });
       }
     } catch (error) {
@@ -114,17 +112,19 @@ const Settings = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('user_profiles')
         .upsert({
-          user_id: user.id,
-          ...profile,
+          id: user.id,
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          plan_id: profile.plan_id,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'user_id'
+          onConflict: 'id'
         });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast({
         title: "Perfil atualizado",
@@ -147,23 +147,19 @@ const Settings = () => {
 
     setIsLoading(true);
     try {
-      const settingsData = {
-        user_id: user.id,
-        notifications_enabled: settings.notifications_enabled,
-        email_notifications: settings.email_notifications,
-        theme: settings.theme,
-        language: settings.language,
-        timezone: settings.timezone,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error } = await supabase
+      const { error: settingsError } = await supabase
         .from('user_settings')
-        .upsert(settingsData, {
-          onConflict: 'user_id'
+        .upsert({
+          id: user.id,
+          theme: settings.theme,
+          notifications_enabled: settings.notifications_enabled,
+          language: settings.language,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
         });
 
-      if (error) throw error;
+      if (settingsError) throw settingsError;
 
       toast({
         title: "Configurações salvas",
@@ -211,92 +207,46 @@ const Settings = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nome completo *</Label>
+                    <Label htmlFor="full_name">Nome completo *</Label>
                     <Input
-                      id="name"
-                      value={profile.name}
-                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                      id="full_name"
+                      value={profile.full_name}
+                      onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                       required
                       className="bg-background border-border"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="avatar_url">Avatar URL</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                      required
+                      id="avatar_url"
+                      value={profile.avatar_url}
+                      onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
+                      placeholder="URL do avatar"
                       className="bg-background border-border"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input
-                      id="phone"
-                      value={profile.phone}
-                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                      placeholder="(11) 99999-9999"
-                      className="bg-background border-border"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="user_type">Tipo de conta</Label>
-                    <Select
-                      value={profile.user_type}
-                      onValueChange={(value: 'pessoa_fisica' | 'pessoa_juridica') => 
-                        setProfile({ ...profile, user_type: value })
-                      }
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pessoa_fisica">
-                          <div className="flex items-center space-x-2">
-                            <Users className="w-4 h-4" />
-                            <span>Pessoa Física</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="pessoa_juridica">
-                          <div className="flex items-center space-x-2">
-                            <Building2 className="w-4 h-4" />
-                            <span>Pessoa Jurídica</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="cpf_cnpj">
-                    {profile.user_type === 'pessoa_fisica' ? 'CPF' : 'CNPJ'}
-                  </Label>
-                  <Input
-                    id="cpf_cnpj"
-                    value={profile.cpf_cnpj}
-                    onChange={(e) => setProfile({ ...profile, cpf_cnpj: e.target.value })}
-                    placeholder={profile.user_type === 'pessoa_fisica' ? '000.000.000-00' : '00.000.000/0000-00'}
-                    className="bg-background border-border"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="address">Endereço</Label>
-                  <Input
-                    id="address"
-                    value={profile.address}
-                    onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                    placeholder="Endereço completo"
-                    className="bg-background border-border"
-                  />
+                  <Label htmlFor="plan_id">Plano Atual</Label>
+                  <Select
+                    value={profile.plan_id !== null ? String(profile.plan_id) : ''}
+                    onValueChange={(value) => setProfile({ ...profile, plan_id: value ? Number(value) : null })}
+                  >
+                    <SelectTrigger className="bg-background border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum plano</SelectItem>
+                      {plans.map((plan) => (
+                        <SelectItem key={plan.id} value={String(plan.id)}>
+                          {plan.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Button type="submit" disabled={isLoading} className="gradient-primary text-white">
@@ -329,17 +279,6 @@ const Settings = () => {
                       checked={settings.notifications_enabled}
                       onCheckedChange={(checked) => 
                         setSettings({ ...settings, notifications_enabled: checked })
-                      }
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="email-notifications">Notificações por email</Label>
-                    <Switch
-                      id="email-notifications"
-                      checked={settings.email_notifications}
-                      onCheckedChange={(checked) => 
-                        setSettings({ ...settings, email_notifications: checked })
                       }
                     />
                   </div>

@@ -92,7 +92,7 @@ const Admin = () => {
       const { data: profiles, error } = await supabase
         .from('user_profiles')
         .select(`
-          user_id,
+          id,
           name,
           email,
           user_type,
@@ -125,10 +125,10 @@ const Admin = () => {
 
       // Combinar dados
       const transformedUsers = (profiles || []).map(profile => {
-        const userSub = subscriptions?.find(sub => sub.user_id === profile.user_id);
+        const userSub = subscriptions?.find(sub => sub.user_id === profile.id);
         
         return {
-          id: profile.user_id,
+          id: profile.id,
           email: profile.email,
           created_at: profile.created_at,
           user_profiles: {
