@@ -21,6 +21,8 @@ export const useFinanceFlowSync = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  
+  console.log('useFinanceFlowSync: Hook initialized, user:', user?.email);
 
   const syncPlan = async (): Promise<SyncResult> => {
     if (!user?.email) {
@@ -36,6 +38,7 @@ export const useFinanceFlowSync = () => {
       console.log('Supabase URL configured');
       console.log('Testing function accessibility...');
       
+      console.log('useFinanceFlowSync: Invoking function with email:', user.email);
       const { data, error } = await supabase.functions.invoke('sync-financeflow-plan', {
         body: { user_email: user.email }
       });
@@ -202,8 +205,13 @@ export const useFinanceFlowSync = () => {
 
   // Chamar autoSync automaticamente ao detectar login/criação de conta
   useEffect(() => {
+    console.log('useFinanceFlowSync: User email detected:', user?.email);
     if (user?.email) {
-      autoSync();
+      // Aguardar um pouco para deixar o trigger criar o perfil primeiro
+      setTimeout(() => {
+        console.log('useFinanceFlowSync: Starting auto-sync...');
+        autoSync();
+      }, 2000);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email]);
