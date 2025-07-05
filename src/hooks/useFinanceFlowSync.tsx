@@ -35,6 +35,7 @@ export const useFinanceFlowSync = () => {
     try {
       console.log('=== Starting FinanceFlow sync ===');
       console.log('User email:', user.email);
+      console.log('User ID:', user.id);
       console.log('Supabase URL configured');
       console.log('Testing function accessibility...');
       
@@ -74,7 +75,7 @@ export const useFinanceFlowSync = () => {
           } else if (error.message?.includes('500')) {
             userMessage = "Erro interno na função de sincronização. Verifique os logs no Supabase Dashboard para mais detalhes.";
           }
-        } else if (error.message?.includes('Failed to fetch') || error.message?.includes('network')) {
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
           userMessage = "Erro de conexão com o servidor. Verifique sua internet e tente novamente.";
         } else if (error.message?.includes('timeout')) {
           userMessage = "Tempo limite esgotado. Tente novamente em alguns minutos.";
@@ -217,5 +218,5 @@ export const useFinanceFlowSync = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.email]);
 
-  return { isLoading, lastSync };
+  return { isLoading, lastSync, syncPlan };
 };
