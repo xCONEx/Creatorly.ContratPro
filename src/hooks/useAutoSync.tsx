@@ -20,17 +20,24 @@ export const useAutoSync = () => {
     try {
       console.log('🔄 Iniciando sincronização automática...');
       
-      const response = await fetch('/api/sync-financeflow-plan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          email: user.email
-        })
-      });
+      // Usar a função edge do Supabase diretamente
+      const supabaseUrl = "https://tmxbgvlijandyvjwstsx.supabase.co";
+      const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRteGJndmxpamFuZHl2andzdHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2NDM0MTQsImV4cCI6MjA2NjIxOTQxNH0.z5lvkJC_dG-TCE5D26ae-7_wImq5BnGNRctYIWgtyiQ";
+      
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/sync-financeflow-plan`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'apikey': supabaseAnonKey,
+          },
+          body: JSON.stringify({
+            user_email: user.email
+          })
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -47,6 +54,8 @@ export const useAutoSync = () => {
         }
       } else {
         console.error('❌ Erro na sincronização automática:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Detalhes do erro:', errorText);
       }
     } catch (error) {
       console.error('❌ Erro na sincronização automática:', error);
