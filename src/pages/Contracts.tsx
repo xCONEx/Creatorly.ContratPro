@@ -23,23 +23,39 @@ import ContractViewModal from '@/components/contract/ContractViewModal';
 import ContractEditModal from '@/components/contract/ContractEditModal';
 import DownloadModal from '@/components/contract/DownloadModal';
 import { 
-  ContractWithClient, 
   CONTRACT_STATUS, 
   getContractStatusLabel, 
   getContractStatusColor,
   ContractStatus
 } from '@/integrations/supabase/types-aux';
 
+// Tipo específico para a consulta de contratos
+type ContractListItem = {
+  id: string;
+  title: string;
+  status: ContractStatus;
+  created_at: string;
+  total_value: number | null;
+  end_date: string | null;
+  description: string | null;
+  client_id: string;
+  clients: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null;
+};
+
 const Contracts = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [contracts, setContracts] = useState<ContractWithClient[]>([]);
+  const [contracts, setContracts] = useState<ContractListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [viewContract, setViewContract] = useState<ContractWithClient | null>(null);
-  const [editContract, setEditContract] = useState<ContractWithClient | null>(null);
-  const [downloadContract, setDownloadContract] = useState<ContractWithClient | null>(null);
+  const [viewContract, setViewContract] = useState<ContractListItem | null>(null);
+  const [editContract, setEditContract] = useState<ContractListItem | null>(null);
+  const [downloadContract, setDownloadContract] = useState<ContractListItem | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -59,12 +75,13 @@ const Contracts = () => {
           status,
           created_at,
           total_value,
-          due_date,
-          content,
+          end_date,
+          description,
           client_id,
           clients (
             name,
-            email
+            email,
+            phone
           )
         `)
         .eq('user_id', user.id)
@@ -84,7 +101,7 @@ const Contracts = () => {
     }
   };
 
-  const handleStatusUpdate = async (contractId: number, newStatus: ContractStatus) => {
+  const handleStatusUpdate = async (contractId: string, newStatus: ContractStatus) => {
     try {
       const { error } = await supabase
         .from('contracts')
@@ -113,7 +130,7 @@ const Contracts = () => {
     }
   };
 
-  const formatContractForExport = (contract: ContractWithClient) => {
+  const formatContractForExport = (contract: ContractListItem) => {
     const currentDate = new Date().toLocaleDateString('pt-BR');
     const contractNumber = contract.id.toString().slice(0, 8).toUpperCase();
     
@@ -141,12 +158,12 @@ Cidade: [_______________], [Estado], CEP: [_____-___]
 
 CLÁUSULA PRIMEIRA – DO OBJETO
 
-${contract.content}
+${contract.description || '[Conteúdo do contrato]'}
 
 
 CLÁUSULA SEGUNDA – DO PRAZO
 
-O presente contrato terá vigência a partir da data de sua assinatura${contract.due_date ? ` até ${new Date(contract.due_date).toLocaleDateString('pt-BR')}` : ''}.
+O presente contrato terá vigência a partir da data de sua assinatura${contract.end_date ? ` até ${new Date(contract.end_date).toLocaleDateString('pt-BR')}` : ''}.
 
 
 CLÁUSULA TERCEIRA – DAS CONDIÇÕES FINANCEIRAS
@@ -233,14 +250,14 @@ CPF: [_______________]                      CPF: [_______________]
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'sent':
-        return <Badge className="bg-yellow-100 text-yellow-800">Enviado</Badge>;
-      case 'signed':
-        return <Badge className="bg-green-100 text-green-800">Assinado</Badge>;
+      case 'active':
+        return <Badge className="bg-blue-100 text-blue-800">Ativo</Badge>;
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-800">Concluído</Badge>;
       case 'draft':
         return <Badge className="bg-gray-100 text-gray-800">Rascunho</Badge>;
-      case 'expired':
-        return <Badge className="bg-red-100 text-red-800">Expirado</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-100 text-red-800">Cancelado</Badge>;
       default:
         return <Badge>Desconhecido</Badge>;
     }
@@ -341,56 +358,47 @@ CPF: [_______________]                      CPF: [_______________]
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex flex-wrap gap-2">
                     <Button 
-                      variant="outline" 
-                      size="sm"
+                      className="border border-gray-300"
                       onClick={() => setViewContract(contract)}
                     >
                       <Eye className="w-4 h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Visualizar</span>
                     </Button>
                     <Button 
-                      variant="outline" 
-                      size="sm"
+                      className="border border-gray-300"
                       onClick={() => setEditContract(contract)}
                     >
                       <Edit className="w-4 h-4 sm:mr-2" />
                       <span className="hidden sm:inline">Editar</span>
                     </Button>
-                    {contract.status === 'sent' && (
-                      <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          onClick={() => handleStatusUpdate(contract.id, 'signed')}
-                        >
-                          <Check className="w-4 h-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Assinar</span>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleStatusUpdate(contract.id, 'expired')}
-                        >
-                          <X className="w-4 h-4 sm:mr-2" />
-                          <span className="hidden sm:inline">Rejeitar</span>
-                        </Button>
-                      </>
+                    {contract.status === 'draft' && (
+                      <Button 
+                        className="text-blue-600 hover:text-blue-700 border border-blue-600"
+                        onClick={() => handleStatusUpdate(contract.id, 'active')}
+                      >
+                        <Check className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Ativar</span>
+                      </Button>
+                    )}
+                    {contract.status === 'active' && (
+                      <Button 
+                        className="text-green-600 hover:text-green-700 border border-green-600"
+                        onClick={() => handleStatusUpdate(contract.id, 'completed')}
+                      >
+                        <Check className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Concluir</span>
+                      </Button>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <Button 
-                      variant="outline" 
-                      size="sm"
+                      className="border border-gray-300"
                       onClick={() => setDownloadContract(contract)}
                     >
                       <Download className="w-4 h-4" />
                     </Button>
                     <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-600"
                       onClick={() => handleDeleteContract(contract.id)}
                     >
                       <Trash2 className="w-4 h-4" />
