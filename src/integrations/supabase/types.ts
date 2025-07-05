@@ -9,218 +9,535 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      users: {
+      admin_roles: {
         Row: {
-          id: string
           created_at: string | null
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          is_active: boolean | null
+          role_type: string
           updated_at: string | null
+          user_id: string
         }
         Insert: {
-          id: string
           created_at?: string | null
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          role_type: string
           updated_at?: string | null
+          user_id: string
         }
         Update: {
-          id?: string
           created_at?: string | null
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          role_type?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agencies: {
+        Row: {
+          cnpj: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          status: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          status?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      agency_collaborators: {
+        Row: {
+          added_at: string | null
+          agency_id: string | null
+          created_at: string | null
+          id: string
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          agency_id?: string | null
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          agency_id?: string | null
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_collaborators_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_invitations: {
+        Row: {
+          agency_id: string
+          email: string
+          expires_at: string | null
+          id: string
+          invited_at: string | null
+          invited_by: string
+          message: string | null
+          responded_at: string | null
+          role: string
+          status: string
+        }
+        Insert: {
+          agency_id: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by: string
+          message?: string | null
+          responded_at?: string | null
+          role?: string
+          status?: string
+        }
+        Update: {
+          agency_id?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_by?: string
+          message?: string | null
+          responded_at?: string | null
+          role?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          address: string | null
+          agency_id: string | null
+          cnpj: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          agency_id?: string | null
+          cnpj?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          agency_id?: string | null
+          cnpj?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          client_id: string
+          contract_file_name: string | null
+          contract_file_url: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["contract_status"] | null
+          template_used: string | null
+          title: string
+          total_value: number | null
+          updated_at: string
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          client_id: string
+          contract_file_name?: string | null
+          contract_file_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["contract_status"] | null
+          template_used?: string | null
+          title: string
+          total_value?: number | null
+          updated_at?: string
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          client_id?: string
+          contract_file_name?: string | null
+          contract_file_url?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["contract_status"] | null
+          template_used?: string | null
+          title?: string
+          total_value?: number | null
+          updated_at?: string
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
       profiles: {
         Row: {
-          id: string
+          address: string | null
+          agency_id: string | null
+          banned: boolean | null
+          company: string | null
+          created_at: string | null
           email: string
+          id: string
+          image_user: string | null
+          logo_base64: string | null
           name: string | null
           phone: string | null
-          company: string | null
-          logo_base64: string | null
-          image_user: string | null
-          user_type: Database['public']['Enums']['user_type']
-          banned: boolean
-          agency_id: string | null
-          role: Database['public']['Enums']['agency_role']
-          created_at: string | null
-          updated_at: string | null
-          subscription: Database['public']['Enums']['subscription_type']
+          role: Database["public"]["Enums"]["agency_role"] | null
+          subscription: Database["public"]["Enums"]["subscription_type"] | null
           subscription_data: Json | null
-          subscription_given_by_agency: boolean
-          address: string | null
+          subscription_given_by_agency: boolean | null
+          updated_at: string | null
+          user_type: Database["public"]["Enums"]["user_type"] | null
         }
         Insert: {
-          id: string
+          address?: string | null
+          agency_id?: string | null
+          banned?: boolean | null
+          company?: string | null
+          created_at?: string | null
           email: string
+          id: string
+          image_user?: string | null
+          logo_base64?: string | null
           name?: string | null
           phone?: string | null
-          company?: string | null
-          logo_base64?: string | null
-          image_user?: string | null
-          user_type?: Database['public']['Enums']['user_type']
-          banned?: boolean
-          agency_id?: string | null
-          role?: Database['public']['Enums']['agency_role']
-          created_at?: string | null
-          updated_at?: string | null
-          subscription?: Database['public']['Enums']['subscription_type']
+          role?: Database["public"]["Enums"]["agency_role"] | null
+          subscription?: Database["public"]["Enums"]["subscription_type"] | null
           subscription_data?: Json | null
-          subscription_given_by_agency?: boolean
-          address?: string | null
+          subscription_given_by_agency?: boolean | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
         }
         Update: {
-          id?: string
+          address?: string | null
+          agency_id?: string | null
+          banned?: boolean | null
+          company?: string | null
+          created_at?: string | null
           email?: string
+          id?: string
+          image_user?: string | null
+          logo_base64?: string | null
           name?: string | null
           phone?: string | null
-          company?: string | null
-          logo_base64?: string | null
-          image_user?: string | null
-          user_type?: Database['public']['Enums']['user_type']
-          banned?: boolean
-          agency_id?: string | null
-          role?: Database['public']['Enums']['agency_role']
-          created_at?: string | null
-          updated_at?: string | null
-          subscription?: Database['public']['Enums']['subscription_type']
+          role?: Database["public"]["Enums"]["agency_role"] | null
+          subscription?: Database["public"]["Enums"]["subscription_type"] | null
           subscription_data?: Json | null
-          subscription_given_by_agency?: boolean
-          address?: string | null
+          subscription_given_by_agency?: boolean | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
       subscription_plans: {
         Row: {
-          id: string
-          name: string
-          description: string | null
-          price_monthly: number
-          price_yearly: number
-          max_contracts_per_month: number
-          features: Json
-          api_access: boolean
+          api_access: boolean | null
           created_at: string | null
+          description: string | null
+          features: Json | null
+          id: string
+          max_contracts_per_month: number | null
+          name: string
+          price: number | null
+          price_monthly: number | null
+          price_yearly: number | null
           updated_at: string | null
         }
         Insert: {
-          id?: string
-          name: string
-          description?: string | null
-          price_monthly?: number
-          price_yearly?: number
-          max_contracts_per_month?: number
-          features?: Json
-          api_access?: boolean
+          api_access?: boolean | null
           created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          max_contracts_per_month?: number | null
+          name: string
+          price?: number | null
+          price_monthly?: number | null
+          price_yearly?: number | null
           updated_at?: string | null
         }
         Update: {
-          id?: string
-          name?: string
-          description?: string | null
-          price_monthly?: number
-          price_yearly?: number
-          max_contracts_per_month?: number
-          features?: Json
-          api_access?: boolean
+          api_access?: boolean | null
           created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          id?: string
+          max_contracts_per_month?: number | null
+          name?: string
+          price?: number | null
+          price_monthly?: number | null
+          price_yearly?: number | null
           updated_at?: string | null
         }
         Relationships: []
       }
-      user_profiles: {
+      tasks: {
         Row: {
-          id: string
-          full_name: string | null
-          avatar_url: string | null
-          plan_id: number | null
+          completed: boolean | null
+          contract_id: string | null
           created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: Database["public"]["Enums"]["priority_level"] | null
+          status: Database["public"]["Enums"]["task_status"] | null
+          title: string
           updated_at: string | null
-          email: string | null
-          phone: string | null
-          company: string | null
-          user_type: string | null
-          subscription: string | null
+          user_id: string
         }
         Insert: {
-          id: string
-          full_name?: string | null
-          avatar_url?: string | null
-          plan_id?: number | null
+          completed?: boolean | null
+          contract_id?: string | null
           created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title: string
           updated_at?: string | null
-          email?: string | null
-          phone?: string | null
-          company?: string | null
-          user_type?: string | null
-          subscription?: string | null
+          user_id: string
         }
         Update: {
-          id?: string
-          full_name?: string | null
-          avatar_url?: string | null
-          plan_id?: number | null
+          completed?: boolean | null
+          contract_id?: string | null
           created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title?: string
           updated_at?: string | null
-          email?: string | null
-          phone?: string | null
-          company?: string | null
-          user_type?: string | null
-          subscription?: string | null
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "user_profiles_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
+            foreignKeyName: "tasks_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_profiles_plan_id_fkey"
-            columns: ["plan_id"]
+            foreignKeyName: "tasks_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "subscription_plans"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
+          {
+            foreignKeyName: "tasks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      user_settings: {
+        Row: {
+          auto_sync_enabled: boolean | null
+          contract_reminders: boolean | null
+          created_at: string | null
+          email_notifications: boolean | null
+          id: string
+          language: string | null
+          notifications_enabled: boolean | null
+          theme: string | null
+          timezone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_sync_enabled?: boolean | null
+          contract_reminders?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_sync_enabled?: boolean | null
+          contract_reminders?: boolean | null
+          created_at?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          theme?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_subscriptions: {
         Row: {
-          id: number
-          user_id: string
-          plan_id: number
-          end_date: string | null
-          start_date: string | null
-          is_active: boolean | null
           created_at: string | null
+          end_date: string | null
+          id: string
+          plan_id: string
+          start_date: string | null
+          status: string | null
+          trial_ends_at: string | null
           updated_at: string | null
+          user_id: string
         }
         Insert: {
-          id?: number
-          user_id: string
-          plan_id: number
-          end_date?: string | null
-          start_date?: string | null
-          is_active?: boolean | null
           created_at?: string | null
+          end_date?: string | null
+          id?: string
+          plan_id: string
+          start_date?: string | null
+          status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string | null
+          user_id: string
         }
         Update: {
-          id?: number
-          user_id?: string
-          plan_id?: number
-          end_date?: string | null
-          start_date?: string | null
-          is_active?: boolean | null
           created_at?: string | null
+          end_date?: string | null
+          id?: string
+          plan_id?: string
+          start_date?: string | null
+          status?: string | null
+          trial_ends_at?: string | null
           updated_at?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -230,342 +547,111 @@ export type Database = {
             referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
         ]
       }
-      user_settings: {
+      user_usage_tracking: {
         Row: {
-          id: string
-          theme: string | null
-          notifications_enabled: boolean | null
-          language: string | null
+          count: number
           created_at: string | null
+          id: string
+          reset_date: string
           updated_at: string | null
+          usage_type: string
+          user_id: string
         }
         Insert: {
-          id: string
-          theme?: string | null
-          notifications_enabled?: boolean | null
-          language?: string | null
+          count?: number
           created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
           id?: string
-          theme?: string | null
-          notifications_enabled?: boolean | null
-          language?: string | null
-          created_at?: string | null
+          reset_date: string
           updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_settings_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      clients: {
-        Row: {
-          id: number
+          usage_type: string
           user_id: string
-          name: string
-          email: string | null
-          phone: string | null
-          address: string | null
-          origin: string
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: number
-          user_id: string
-          name: string
-          email?: string | null
-          phone?: string | null
-          address?: string | null
-          origin: string
-          created_at?: string | null
-          updated_at?: string | null
         }
         Update: {
-          id?: number
+          count?: number
+          created_at?: string | null
+          id?: string
+          reset_date?: string
+          updated_at?: string | null
+          usage_type?: string
           user_id?: string
-          name?: string
-          email?: string | null
-          phone?: string | null
-          address?: string | null
-          origin?: string
-          created_at?: string | null
-          updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "clients_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      contract_templates: {
-        Row: {
-          id: number
-          user_id: string | null
-          name: string
-          content: string
-          is_public: boolean
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: number
-          user_id?: string | null
-          name: string
-          content: string
-          is_public: boolean
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: number
-          user_id?: string | null
-          name?: string
-          content?: string
-          is_public?: boolean
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contract_templates_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      contracts: {
-        Row: {
-          id: number
-          user_id: string
-          client_id: number
-          template_id: number | null
-          title: string
-          content: string
-          total_value: number
-          due_date: string
-          status: string
-          signed_at: string | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: number
-          user_id: string
-          client_id: number
-          template_id?: number | null
-          title: string
-          content: string
-          total_value: number
-          due_date: string
-          status: string
-          signed_at?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: number
-          user_id?: string
-          client_id?: number
-          template_id?: number | null
-          title?: string
-          content?: string
-          total_value?: number
-          due_date?: string
-          status?: string
-          signed_at?: string | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contracts_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "contract_templates"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contracts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contracts_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      contract_events: {
-        Row: {
-          id: number
-          contract_id: number
-          event_type: string
-          description: string | null
-          event_timestamp: string
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: number
-          contract_id: number
-          event_type: string
-          description?: string | null
-          event_timestamp?: string
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: number
-          contract_id?: number
-          event_type?: string
-          description?: string | null
-          event_timestamp?: string
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contract_events_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      notifications: {
-        Row: {
-          id: number
-          user_id: string
-          contract_id: number | null
-          title: string
-          message: string
-          notification_type: string | null
-          is_read: boolean
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: number
-          user_id: string
-          contract_id?: number | null
-          title: string
-          message: string
-          notification_type?: string | null
-          is_read?: boolean
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: number
-          user_id?: string
-          contract_id?: number | null
-          title?: string
-          message?: string
-          notification_type?: string | null
-          is_read?: boolean
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_contract_id_fkey"
-            columns: ["contract_id"]
-            isOneToOne: false
-            referencedRelation: "contracts"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      reports: {
-        Row: {
-          id: number
-          user_id: string
-          report_type: string
-          parameters: string | null
-          file_url: string | null
-          generated_at: string
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: number
-          user_id: string
-          report_type: string
-          parameters?: string | null
-          file_url?: string | null
-          generated_at?: string
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: number
-          user_id?: string
-          report_type?: string
-          parameters?: string | null
-          file_url?: string | null
-          generated_at?: string
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
+        Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      user_profiles: {
+        Row: {
+          address: string | null
+          agency_id: string | null
+          banned: boolean | null
+          company: string | null
+          created_at: string | null
+          email: string | null
+          id: string | null
+          image_user: string | null
+          logo_base64: string | null
+          name: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["agency_role"] | null
+          subscription: Database["public"]["Enums"]["subscription_type"] | null
+          subscription_data: Json | null
+          subscription_given_by_agency: boolean | null
+          updated_at: string | null
+          user_type: Database["public"]["Enums"]["user_type"] | null
+        }
+        Insert: {
+          address?: string | null
+          agency_id?: string | null
+          banned?: boolean | null
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          image_user?: string | null
+          logo_base64?: string | null
+          name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["agency_role"] | null
+          subscription?: Database["public"]["Enums"]["subscription_type"] | null
+          subscription_data?: Json | null
+          subscription_given_by_agency?: boolean | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+        }
+        Update: {
+          address?: string | null
+          agency_id?: string | null
+          banned?: boolean | null
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          image_user?: string | null
+          logo_base64?: string | null
+          name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["agency_role"] | null
+          subscription?: Database["public"]["Enums"]["subscription_type"] | null
+          subscription_data?: Json | null
+          subscription_given_by_agency?: boolean | null
+          updated_at?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
     }
     Enums: {
-      client_origin: 'website' | 'referral' | 'social_media' | 'cold_outreach' | 'other'
-      contract_status: 'draft' | 'sent' | 'signed' | 'expired' | 'cancelled'
-      user_type: 'individual' | 'company' | 'agency'
-      agency_role: 'owner' | 'admin' | 'editor' | 'viewer' | 'member'
-      subscription_type: 'free' | 'basic' | 'premium' | 'enterprise' | 'pro' | 'business' | 'annual' | 'monthly'
+      agency_role: "admin" | "editor" | "viewer" | "member"
+      contract_status: "draft" | "active" | "completed" | "cancelled"
+      priority_level: "low" | "medium" | "high"
+      subscription_type: "free" | "basic" | "professional" | "enterprise"
+      task_status: "todo" | "in_progress" | "review" | "completed"
+      user_type: "individual" | "company" | "agency"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -680,6 +766,13 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      agency_role: ["admin", "editor", "viewer", "member"],
+      contract_status: ["draft", "active", "completed", "cancelled"],
+      priority_level: ["low", "medium", "high"],
+      subscription_type: ["free", "basic", "professional", "enterprise"],
+      task_status: ["todo", "in_progress", "review", "completed"],
+      user_type: ["individual", "company", "agency"],
+    },
   },
 } as const
