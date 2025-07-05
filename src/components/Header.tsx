@@ -4,28 +4,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Menu } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Tables } from '@/integrations/supabase/types';
 
 interface UserProfile {
-  full_name: string;
+  name: string;
   email: string;
   phone: string;
   company: string;
   user_type: 'individual' | 'company' | 'agency';
-  subscription: string;
+  subscription: 'free' | 'basic' | 'professional' | 'enterprise';
 }
 
-export default function Header() {
+interface HeaderProps {
+  onMenuToggle: () => void;
+}
+
+export default function Header({ onMenuToggle }: HeaderProps) {
   const { user, signOut } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
-    full_name: '',
+    name: '',
     email: '',
     phone: '',
     company: '',
@@ -53,7 +59,7 @@ export default function Header() {
         console.error('Error fetching profile:', error);
         // Usar dados do user como fallback
         setProfile({
-          full_name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
           email: user.email || '',
           phone: '',
           company: '',
@@ -65,17 +71,17 @@ export default function Header() {
 
       if (profile) {
         setProfile({
-          full_name: profile.full_name || '',
+          name: profile.name || '',
           email: profile.email || '',
           phone: profile.phone || '',
           company: profile.company || '',
           user_type: (profile.user_type as 'individual' | 'company' | 'agency') || 'individual',
-          subscription: profile.subscription || 'free'
+          subscription: (profile.subscription as 'free' | 'basic' | 'professional' | 'enterprise') || 'free'
         });
       } else {
         // Se não existe perfil, usar dados do user
         setProfile({
-          full_name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
           email: user.email || '',
           phone: '',
           company: '',
@@ -97,7 +103,7 @@ export default function Header() {
         .from('user_profiles')
         .upsert({
           id: user.id,
-          full_name: profile.full_name,
+          name: profile.name,
           email: profile.email,
           phone: profile.phone,
           company: profile.company,
@@ -126,28 +132,30 @@ export default function Header() {
     <header className="bg-white border-b border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
+          <Button
+            onClick={onMenuToggle}
+            className="lg:hidden"
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
           <h1 className="text-xl font-semibold text-gray-900">ContratPro</h1>
         </div>
 
         {user && (
           <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-600">
-              <span className="font-medium">{profile.full_name}</span>
+              <span className="font-medium">{profile.name}</span>
               <span className="mx-2">•</span>
               <span>{profile.subscription}</span>
             </div>
 
             <Button
-              variant="ghost"
-              size="sm"
               onClick={() => setIsProfileOpen(true)}
             >
               Perfil
             </Button>
 
             <Button
-              variant="ghost"
-              size="sm"
               onClick={handleSignOut}
               className="text-slate-500 hover:text-slate-700"
             >
@@ -169,8 +177,8 @@ export default function Header() {
               </Label>
               <Input
                 id="name"
-                value={profile.full_name}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                value={profile.name}
+                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                 className="col-span-3"
               />
             </div>
@@ -226,16 +234,11 @@ export default function Header() {
           </div>
           <div className="flex justify-end space-x-2">
             <Button
-              variant="ghost"
-              size="sm"
               onClick={() => setIsProfileOpen(false)}
-              className="w-full"
             >
               Cancelar
             </Button>
             <Button
-              variant="default"
-              size="sm"
               disabled={isLoading}
               onClick={handleProfileUpdate}
             >
