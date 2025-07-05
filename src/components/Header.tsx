@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Menu } from 'lucide-react';
+import { Menu, User, LogOut, ChevronDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     user_type: 'individual',
     subscription: 'free'
   });
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -47,17 +48,13 @@ export default function Header({ onMenuToggle }: HeaderProps) {
 
   const fetchProfile = async () => {
     if (!user) return;
-
     try {
       const { data: profile, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        // Usar dados do user como fallback
+        .single();
+      if (error || !profile) {
         setProfile({
           name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
           email: user.email || '',
@@ -68,29 +65,23 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         });
         return;
       }
-
-      if (profile) {
-        setProfile({
-          name: profile.name || '',
-          email: profile.email || '',
-          phone: profile.phone || '',
-          company: profile.company || '',
-          user_type: (profile.user_type as 'individual' | 'company' | 'agency') || 'individual',
-          subscription: (profile.subscription as 'free' | 'basic' | 'professional' | 'enterprise') || 'free'
-        });
-      } else {
-        // Se não existe perfil, usar dados do user
-        setProfile({
-          name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
-          email: user.email || '',
-          phone: '',
-          company: '',
-          user_type: 'individual',
-          subscription: 'free'
-        });
-      }
+      setProfile({
+        name: profile.name || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        company: profile.company || '',
+        user_type: (profile.user_type as 'individual' | 'company' | 'agency') || 'individual',
+        subscription: (profile.subscription as 'free' | 'basic' | 'professional' | 'enterprise') || 'free'
+      });
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      setProfile({
+        name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
+        email: user.email || '',
+        phone: '',
+        company: '',
+        user_type: 'individual',
+        subscription: 'free'
+      });
     }
   };
 
@@ -129,42 +120,45 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            onClick={onMenuToggle}
-            className="lg:hidden"
-          >
+    <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm sticky top-0 z-30">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center gap-2">
+          <Button onClick={onMenuToggle} className="lg:hidden p-2" aria-label="Abrir menu">
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-xl font-semibold text-gray-900">ContratPro</h1>
+          <h1 className="text-2xl font-bold text-blue-700 tracking-tight select-none">ContratPro</h1>
         </div>
-
         {user && (
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">{profile.name}</span>
-              <span className="mx-2">•</span>
-              <span>{profile.subscription}</span>
+          <div className="relative flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setMenuOpen((v) => !v)}>
+              <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="font-semibold text-gray-900 leading-tight">{profile.name}</span>
+                <span className="text-xs text-blue-600 font-medium capitalize">{profile.subscription}</span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-gray-400 ml-1" />
             </div>
-
-            <Button
-              onClick={() => setIsProfileOpen(true)}
-            >
-              Perfil
-            </Button>
-
-            <Button
-              onClick={handleSignOut}
-              className="text-slate-500 hover:text-slate-700"
-            >
-              Sair
-            </Button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-12 w-48 bg-white border rounded-lg shadow-lg py-2 z-50 animate-fade-in">
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-blue-50 text-gray-700"
+                  onClick={() => { setIsProfileOpen(true); setMenuOpen(false); }}
+                >
+                  <User className="w-4 h-4" /> Perfil
+                </button>
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-blue-50 text-gray-700"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4" /> Sair
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
-
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
