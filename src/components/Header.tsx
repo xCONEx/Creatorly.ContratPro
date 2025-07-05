@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Menu, User, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, User, LogOut, ChevronDown, User as UserIcon, Mail, Phone, Building, Save, X, CheckCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tables } from '@/integrations/supabase/types';
+import { toast } from '@/hooks/use-toast';
 
 interface UserProfile {
   name: string;
@@ -30,6 +31,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   const { user, signOut } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     email: '',
@@ -89,6 +91,8 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     if (!user) return;
 
     setIsLoading(true);
+    setIsSuccess(false);
+    
     try {
       const { error } = await supabase
         .from('user_profiles')
@@ -105,11 +109,30 @@ export default function Header({ onMenuToggle }: HeaderProps) {
 
       if (error) {
         console.error('Error updating profile:', error);
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar as alterações. Tente novamente.",
+          variant: "destructive",
+        });
       } else {
-        setIsProfileOpen(false);
+        setIsSuccess(true);
+        toast({
+          title: "Perfil atualizado!",
+          description: "Suas informações foram salvas com sucesso.",
+        });
+        
+        setTimeout(() => {
+          setIsProfileOpen(false);
+          setIsSuccess(false);
+        }, 1500);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -159,25 +182,42 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           </div>
         )}
       </div>
+      
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Editar Perfil</DialogTitle>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader className="relative">
+            <DialogTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-blue-600" />
+              Editar Perfil
+            </DialogTitle>
+            <button
+              onClick={() => setIsProfileOpen(false)}
+              className="absolute right-4 top-4 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Nome
+          
+          <div className="space-y-6 py-4">
+            {/* Nome */}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <UserIcon className="w-4 h-4" />
+                Nome Completo
               </Label>
               <Input
                 id="name"
                 value={profile.name}
                 onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                className="col-span-3"
+                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Digite seu nome completo"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="email" className="text-right">
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Mail className="w-4 h-4" />
                 Email
               </Label>
               <Input
@@ -185,59 +225,72 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                 type="email"
                 value={profile.email}
                 onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                className="col-span-3"
+                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                placeholder="seu@email.com"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="phone" className="text-right">
+
+            {/* Telefone */}
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Phone className="w-4 h-4" />
                 Telefone
               </Label>
               <Input
                 id="phone"
                 value={profile.phone}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className="col-span-3"
+                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                placeholder="(11) 99999-9999"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="company" className="text-right">
+
+            {/* Empresa */}
+            <div className="space-y-2">
+              <Label htmlFor="company" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Building className="w-4 h-4" />
                 Empresa
               </Label>
               <Input
                 id="company"
                 value={profile.company}
                 onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-                className="col-span-3"
+                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Nome da sua empresa"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="user_type" className="text-right">
-                Tipo
-              </Label>
-              <select
-                id="user_type"
-                value={profile.user_type}
-                onChange={(e) => setProfile({ ...profile, user_type: e.target.value as 'individual' | 'company' | 'agency' })}
-                className="col-span-3 border border-gray-300 rounded-md px-3 py-2"
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => setIsProfileOpen(false)}
+                className="flex-1 h-11 border-gray-300 hover:bg-gray-50 bg-white text-gray-700"
               >
-                <option value="individual">Pessoa Física</option>
-                <option value="company">Empresa</option>
-                <option value="agency">Agência</option>
-              </select>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleProfileUpdate}
+                disabled={isLoading}
+                className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Salvando...
+                  </div>
+                ) : isSuccess ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Salvo!
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Save className="w-4 h-4" />
+                    Salvar
+                  </div>
+                )}
+              </Button>
             </div>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button
-              onClick={() => setIsProfileOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              disabled={isLoading}
-              onClick={handleProfileUpdate}
-            >
-              {isLoading ? 'Salvando...' : 'Salvar'}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
