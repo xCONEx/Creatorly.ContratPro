@@ -14,9 +14,12 @@ import { toast } from '@/hooks/use-toast';
 import { User, Settings as SettingsIcon, Bell, Crown, Building2, Users } from 'lucide-react';
 
 interface UserProfile {
-  full_name: string;
-  avatar_url: string;
-  plan_id: number | null;
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface UserSettings {
@@ -32,9 +35,12 @@ const Settings = () => {
   const { user } = useAuth();
   const { subscription, plans, contractCount } = useSubscription();
   const [profile, setProfile] = useState<UserProfile>({
-    full_name: '',
+    id: '',
+    name: '',
+    email: '',
     avatar_url: '',
-    plan_id: null,
+    created_at: '',
+    updated_at: ''
   });
   const [settings, setSettings] = useState<UserSettings>({
     id: '',
@@ -64,15 +70,21 @@ const Settings = () => {
         .maybeSingle();
       if (profile) {
         setProfile({
-          full_name: profile.full_name || '',
+          id: profile.id || '',
+          name: profile.name || '',
+          email: profile.email || '',
           avatar_url: profile.avatar_url || '',
-          plan_id: profile.plan_id ?? null,
+          created_at: profile.created_at || '',
+          updated_at: profile.updated_at || ''
         });
       } else {
         setProfile({
-          full_name: '',
+          id: '',
+          name: '',
+          email: '',
           avatar_url: '',
-          plan_id: null,
+          created_at: '',
+          updated_at: ''
         });
       }
     } catch (error) {
@@ -116,9 +128,9 @@ const Settings = () => {
         .from('user_profiles')
         .upsert({
           id: user.id,
-          full_name: profile.full_name,
+          name: profile.name,
+          email: profile.email,
           avatar_url: profile.avatar_url,
-          plan_id: profile.plan_id,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'id'
@@ -150,13 +162,13 @@ const Settings = () => {
       const { error: settingsError } = await supabase
         .from('user_settings')
         .upsert({
-          id: user.id,
+          user_id: user.id,
           theme: settings.theme,
           notifications_enabled: settings.notifications_enabled,
           language: settings.language,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'id'
+          onConflict: 'user_id'
         });
 
       if (settingsError) throw settingsError;
@@ -207,13 +219,25 @@ const Settings = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="full_name">Nome completo *</Label>
+                    <Label htmlFor="name">Nome completo *</Label>
                     <Input
-                      id="full_name"
-                      value={profile.full_name}
-                      onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                      id="name"
+                      value={profile.name}
+                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                       required
                       className="bg-background border-border"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      value={profile.email}
+                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                      placeholder="seu@email.com"
+                      className="bg-background border-border"
+                      disabled
                     />
                   </div>
                   
@@ -221,7 +245,7 @@ const Settings = () => {
                     <Label htmlFor="avatar_url">Avatar URL</Label>
                     <Input
                       id="avatar_url"
-                      value={profile.avatar_url}
+                      value={profile.avatar_url || ''}
                       onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
                       placeholder="URL do avatar"
                       className="bg-background border-border"
@@ -229,25 +253,7 @@ const Settings = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="plan_id">Plano Atual</Label>
-                  <Select
-                    value={profile.plan_id !== null ? String(profile.plan_id) : 'none'}
-                    onValueChange={(value) => setProfile({ ...profile, plan_id: value !== 'none' ? Number(value) : null })}
-                  >
-                    <SelectTrigger className="bg-background border-border">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum plano</SelectItem>
-                      {plans.map((plan) => (
-                        <SelectItem key={plan.id} value={String(plan.id)}>
-                          {plan.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+
 
                 <Button type="submit" disabled={isLoading} className="gradient-primary text-white">
                   {isLoading ? 'Salvando...' : 'Salvar Perfil'}
@@ -348,7 +354,7 @@ const Settings = () => {
               {currentPlan && (
                 <div className="space-y-4">
                   <div className="text-center">
-                    <Badge className={currentPlan.name === 'Gratuito' ? 'bg-secondary' : 'bg-default'} className="mb-2">
+                    <Badge className={`${currentPlan.name === 'Gratuito' ? 'bg-secondary' : 'bg-default'} mb-2`}>
                       {currentPlan.name}
                     </Badge>
                     <p className="text-2xl font-bold text-card-foreground">
@@ -362,14 +368,14 @@ const Settings = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">Contratos este mês:</span>
                       <span className="text-sm font-bold">
-                        {contractCount} / {currentPlan.max_contracts_per_month}
+                        {contractCount} / ∞
                       </span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
                         className="bg-primary h-2 rounded-full transition-all duration-300"
                         style={{ 
-                          width: `${Math.min((contractCount / currentPlan.max_contracts_per_month) * 100, 100)}%` 
+                          width: `${Math.min((contractCount / 100) * 100, 100)}%` 
                         }}
                       />
                     </div>
@@ -378,17 +384,22 @@ const Settings = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-card-foreground">Recursos inclusos:</p>
                     <ul className="text-sm text-muted-foreground space-y-1">
-                      {currentPlan.features.map((feature, index) => (
+                      {Array.isArray(currentPlan.features) ? currentPlan.features.map((feature, index) => (
                         <li key={index} className="flex items-start space-x-2">
                           <span className="text-green-500 mt-0.5">✓</span>
                           <span>{feature}</span>
                         </li>
-                      ))}
+                      )) : (
+                        <li className="flex items-start space-x-2">
+                          <span className="text-green-500 mt-0.5">✓</span>
+                          <span>{currentPlan.features || 'Recursos do plano'}</span>
+                        </li>
+                      )}
                     </ul>
                   </div>
                   
                   {currentPlan.name === 'Gratuito' && (
-                    <Button className="w-full gradient-primary text-white" variant="default">
+                    <Button className="w-full gradient-primary text-white">
                       Fazer Upgrade
                     </Button>
                   )}
