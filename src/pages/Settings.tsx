@@ -352,7 +352,7 @@ const Settings = () => {
                       {currentPlan.name}
                     </Badge>
                     <p className="text-2xl font-bold text-card-foreground">
-                      R$ {currentPlan.price.toFixed(2)}
+                      R$ {(currentPlan.price || 0).toFixed(2)}
                       <span className="text-sm font-normal text-muted-foreground">/mês</span>
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">{currentPlan.description}</p>
