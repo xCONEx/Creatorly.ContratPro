@@ -442,7 +442,10 @@ const Clients = () => {
         </div>
         {/* Clientes do FinanceFlow */}
         <div>
-          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">Clientes do FinanceFlow <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Sincronizados</span></h2>
+          <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            Clientes do FinanceFlow Sincronizados
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Automático</span>
+          </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
             {financeflowClients.length === 0 ? (
               <div className="col-span-full text-center py-8 text-slate-500">Nenhum cliente sincronizado do FinanceFlow.</div>
