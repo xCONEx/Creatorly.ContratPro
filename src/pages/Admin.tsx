@@ -403,7 +403,7 @@ const Admin = () => {
                                 <SelectContent>
                                   {plans.map((plan) => (
                                     <SelectItem key={plan.id} value={plan.id.toString()}>
-                                      {plan.name} - R$ {plan.price.toFixed(2)}/mês
+                                      {plan.name} - R$ {(plan.price || 0).toFixed(2)}/mês
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
