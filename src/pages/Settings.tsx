@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
 import { User, Settings as SettingsIcon, Bell, Crown, Building2, Users } from 'lucide-react';
+import { AvatarInput } from '@/components/ui/avatar-input';
 
 interface UserProfile {
   id: string;
@@ -73,7 +74,7 @@ const Settings = () => {
           id: profile.id || '',
           name: profile.name || '',
           email: profile.email || '',
-          avatar_url: profile.avatar_url || '',
+          avatar_url: (profile as any).avatar_url || '',
           created_at: profile.created_at || '',
           updated_at: profile.updated_at || ''
         });
@@ -241,16 +242,13 @@ const Settings = () => {
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="avatar_url">Avatar URL</Label>
-                    <Input
-                      id="avatar_url"
-                      value={profile.avatar_url || ''}
-                      onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                      placeholder="URL do avatar"
-                      className="bg-background border-border"
-                    />
-                  </div>
+                  <AvatarInput
+                    value={profile.avatar_url || ''}
+                    onChange={(value) => setProfile({ ...profile, avatar_url: value })}
+                    label="Foto do Perfil"
+                    placeholder="URL da imagem"
+                    className="col-span-2"
+                  />
                 </div>
 
 
