@@ -20,17 +20,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 interface UserSubscription {
-  id: number;
-  user_id: string;
-  plan_id: number;
   status: string;
-  start_date: string;
-  end_date: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  subscription_plans: {
-    id: number;
+  plan: {
+    id: string | number;
     name: string;
     price: number;
   };
@@ -48,14 +40,9 @@ interface User {
 }
 
 interface SubscriptionPlan {
-  id: number;
+  id: string | number;
   name: string;
-  description: string;
   price: number;
-  duration_days: number;
-  features: string;
-  created_at: string;
-  updated_at: string;
 }
 
 const Admin = () => {
@@ -264,7 +251,7 @@ const Admin = () => {
   };
 
   const filteredUsers = users.filter(user => 
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.user_profiles?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
