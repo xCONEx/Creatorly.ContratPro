@@ -1,507 +1,393 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Nova função para buscar clientes do FinanceFlow por user_email
-const fetchFinanceFlowClientsByUserEmail = async (financeflowSupabase: any, userEmail: string) => {
-  console.log(`=== Buscando clientes do FinanceFlow para user_email: ${userEmail} ===`);
+const planMapping = {
+  free: "Gratuito",
+  basic: "Gratuito",
+  premium: "Profissional",
+  pro: "Profissional",
+  enterprise: "Empresarial",
+  business: "Empresarial",
+  "enterprise-annual": "Empresarial",
+  "enterprise-monthly": "Empresarial",
+  "pro-annual": "Profissional",
+  "pro-monthly": "Profissional"
+};
+
+// Função para diagnosticar estrutura do FinanceFlow
+const diagnoseFinanceFlowStructure = async (financeflowSupabase: any) => {
+  console.log('=== Diagnóstico da estrutura do FinanceFlow ===');
   
   try {
-    // Primeiro, testar conexão com FinanceFlow
-    console.log('=== Testando conexão com FinanceFlow ===');
-    const { count, error: testError } = await financeflowSupabase
-      .from('clients')
-      .select('*', { count: 'exact', head: true });
+    // Testar tabela profiles (PRINCIPAL)
+    console.log('1. Testando tabela profiles...');
+    const { data: profilesData, error: profilesError } = await financeflowSupabase
+      .from('profiles')
+      .select('*')
+      .limit(1);
     
-    if (testError) {
-      console.error('Erro de conexão com FinanceFlow:', testError);
-      throw new Error(`Conexão com FinanceFlow falhou: ${testError.message}`);
-    }
-    
-    console.log(`Conexão com FinanceFlow estabelecida. Total de clientes na base: ${count}`);
-    
-    // Se for ação de fetch_clients, buscar TODOS os clientes primeiro para debug
-    console.log('=== Debug: Buscando TODOS os clientes do FinanceFlow ===');
-    const { data: allClientsData, error: allClientsError } = await financeflowSupabase
-      .from('clients')
-      .select(`
-        id,
-        user_id,
-        user_email,
-        name,
-        email,
-        phone,
-        address,
-        cnpj,
-        description,
-        created_at,
-        updated_at
-      `)
-      .limit(5);
-    
-    if (allClientsError) {
-      console.error('Erro ao buscar todos os clientes:', allClientsError);
+    if (profilesError) {
+      console.error('Erro ao acessar tabela profiles:', profilesError);
     } else {
-      console.log(`Primeiros 5 clientes na base FinanceFlow:`, allClientsData?.map(c => ({
-        id: c.id,
-        name: c.name,
-        user_email: c.user_email,
-        email: c.email
-      })));
+      console.log('Tabela profiles acessível. Estrutura:', Object.keys(profilesData?.[0] || {}));
     }
-    
-    // Agora buscar clientes usando user_email diretamente
-    console.log(`=== Buscando clientes específicos para user_email: ${userEmail} ===`);
+
+    // Testar tabela clients
+    console.log('2. Testando tabela clients...');
     const { data: clientsData, error: clientsError } = await financeflowSupabase
       .from('clients')
-      .select(`
-        id,
-        user_id,
-        user_email,
-        name,
-        email,
-        phone,
-        address,
-        cnpj,
-        description,
-        created_at,
-        updated_at
-      `)
-      .eq('user_email', userEmail)
-      .order('created_at', { ascending: false });
-
-    if (clientsError) {
-      console.error('Erro ao buscar clientes por user_email:', clientsError);
-      throw clientsError;
-    }
-
-    console.log(`Encontrados ${clientsData?.length || 0} clientes para user_email ${userEmail}`);
+      .select('*')
+      .limit(1);
     
-    if (clientsData && clientsData.length > 0) {
-      console.log('Clientes encontrados:', clientsData.map(client => ({
-        id: client.id,
-        name: client.name,
-        email: client.email,
-        user_email: client.user_email,
-        phone: client.phone,
-        cnpj: client.cnpj
-      })));
+    if (clientsError) {
+      console.error('Erro ao acessar tabela clients:', clientsError);
     } else {
-      console.log('ATENÇÃO: Nenhum cliente encontrado para este user_email no FinanceFlow');
-      console.log('Verificações necessárias:');
-      console.log('1. O user_email está correto:', userEmail);
-      console.log('2. Existem clientes cadastrados no FinanceFlow com este email no campo user_email');
-      console.log('3. O campo user_email está preenchido na tabela clients do FinanceFlow');
-      
-      // Verificar se existem clientes com emails similares
-      if (allClientsData && allClientsData.length > 0) {
-        const emailsFound = allClientsData
-          .filter(client => client.user_email)
-          .map(client => client.user_email)
-          .slice(0, 3);
-        console.log('Exemplos de user_emails encontrados na base:', emailsFound);
-      }
+      console.log('Tabela clients acessível. Estrutura:', Object.keys(clientsData?.[0] || {}));
     }
 
-    return clientsData || [];
+    return {
+      profiles: !profilesError,
+      clients: !clientsError
+    };
   } catch (error) {
-    console.error('Erro na função fetchFinanceFlowClientsByUserEmail:', error);
+    console.error('Erro no diagnóstico:', error);
+    return { profiles: false, clients: false };
+  }
+};
+
+// Função para buscar usuário no FinanceFlow
+const fetchFinanceFlowUser = async (financeflowSupabase: any, userEmail: string) => {
+  console.log(`=== Buscando usuário no FinanceFlow: ${userEmail} ===`);
+  
+  try {
+    console.log('Buscando na tabela profiles...');
+    
+    const { data, error } = await financeflowSupabase
+      .from('profiles')
+      .select('id, email, subscription, name, subscription_data')
+      .eq('email', userEmail)
+      .single();
+    
+    if (error) {
+      console.error('Erro ao buscar em profiles:', error);
+      throw new Error(`Usuário não encontrado no FinanceFlow: ${error.message}`);
+    }
+    
+    console.log('Usuário encontrado em profiles:', data);
+    return data;
+  } catch (error) {
+    console.error('Erro ao buscar usuário no FinanceFlow:', error.message);
+    throw error;
+  }
+};
+
+// Função para buscar usuário no ContratPro
+const fetchContratProUser = async (contratproSupabase: any, userEmail: string) => {
+  console.log(`=== Buscando usuário no ContratPro: ${userEmail} ===`);
+  
+  try {
+    // Buscar na tabela profiles primeiro
+    const { data: profileData, error: profileError } = await contratproSupabase
+      .from('profiles')
+      .select('*')
+      .eq('email', userEmail)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Erro ao buscar em profiles:', profileError);
+      throw new Error('Erro ao buscar profiles');
+    }
+
+    if (profileData) {
+      console.log('Usuário encontrado em profiles:', profileData);
+      return profileData;
+    }
+
+    // Se não encontrou em profiles, buscar em user_profiles
+    console.log('Buscando em user_profiles...');
+    const { data: userProfileData, error: userProfileError } = await contratproSupabase
+      .from('user_profiles')
+      .select('*')
+      .eq('email', userEmail)
+      .single();
+
+    if (userProfileError && userProfileError.code !== 'PGRST116') {
+      console.error('Erro ao buscar em user_profiles:', userProfileError);
+      throw new Error('Erro ao buscar user_profiles');
+    }
+
+    if (userProfileData) {
+      console.log('Usuário encontrado em user_profiles:', userProfileData);
+      return userProfileData;
+    }
+
+    throw new Error('Usuário não encontrado no ContratPro');
+  } catch (error) {
+    console.error('Erro ao buscar usuário no ContratPro:', error.message);
+    throw error;
+  }
+};
+
+// Função para mapear planos do FinanceFlow para ContratPro
+const mapFinanceFlowPlanToContratPro = (financeflowPlan: string) => {
+  const originalPlan = financeflowPlan?.toLowerCase() || 'free';
+  return planMapping[originalPlan] || 'Gratuito';
+};
+
+// Função para atualizar assinatura do usuário
+const updateUserSubscription = async (contratproSupabase: any, userId: string, planName: string) => {
+  console.log(`=== Atualizando assinatura para: ${planName} ===`);
+  
+  try {
+    // Buscar o plano no ContratPro
+    const { data: planData, error: planError } = await contratproSupabase
+      .from('subscription_plans')
+      .select('*')
+      .eq('name', planName)
+      .single();
+
+    if (planError || !planData) {
+      console.error('Plano não encontrado:', planError);
+      throw new Error(`Plano ${planName} não encontrado no ContratPro`);
+    }
+
+    console.log('Plano encontrado:', planData.id);
+
+    // Atualizar ou criar assinatura
+    const { data: subscriptionData, error: subscriptionError } = await contratproSupabase
+      .from('user_subscriptions')
+      .upsert({
+        user_id: userId,
+        plan_id: planData.id,
+        status: 'active',
+        start_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      })
+      .select()
+      .single();
+
+    if (subscriptionError) {
+      console.error('Erro ao atualizar assinatura:', subscriptionError);
+      throw new Error(`Falha ao atualizar assinatura: ${subscriptionError.message}`);
+    }
+
+    console.log('Assinatura atualizada com sucesso:', subscriptionData);
+    return subscriptionData;
+  } catch (error) {
+    console.error('Erro ao atualizar assinatura:', error);
     throw error;
   }
 };
 
 serve(async (req) => {
-  console.log('=== Edge Function Called ===')
-  console.log('Method:', req.method)
-  console.log('URL:', req.url)
-
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight')
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    console.error('Method not allowed:', req.method)
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-
   try {
-    console.log('=== Starting sync function ===')
-
-    // Parse request body
-    let requestBody;
-    try {
-      const rawBody = await req.text()
-      console.log('Raw request body:', rawBody)
-      requestBody = JSON.parse(rawBody)
-    } catch (e) {
-      console.error('Error parsing request body:', e)
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body', details: e.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { user_email, action = 'sync' } = requestBody
-    console.log('Processing request:', { user_email, action })
+    console.log('=== Starting FinanceFlow sync function ===')
     
-    // Validate email format
-    if (!user_email || typeof user_email !== 'string' || !user_email.includes('@')) {
-      console.error('Invalid email provided:', user_email)
+    // Parse request body
+    const { user_email, action = 'sync' } = await req.json()
+    
+    if (!user_email) {
+      console.error('Missing user_email in request');
       return new Response(
-        JSON.stringify({ error: 'Valid user_email is required' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'user_email is required' 
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Get environment variables
-    const contratproUrl = Deno.env.get('CONTRATPRO_SUPABASE_URL');
-    const contratproKey = Deno.env.get('CONTRATPRO_SUPABASE_KEY');
-    const financeflowUrl = Deno.env.get('FINANCEFLOW_SUPABASE_URL');
-    const financeflowKey = Deno.env.get('FINANCEFLOW_SUPABASE_KEY');
-
-    console.log('=== Environment Variables Check ===')
-    console.log('SUPABASE_URL:', contratproUrl ? `Set (${contratproUrl.substring(0, 30)}...)` : 'MISSING')
-    console.log('SUPABASE_SERVICE_ROLE_KEY:', contratproKey ? 'Set (hidden)' : 'MISSING')
-    console.log('FINANCEFLOW_SUPABASE_URL:', financeflowUrl ? `Set (${financeflowUrl.substring(0, 30)}...)` : 'MISSING')
-    console.log('FINANCEFLOW_SUPABASE_KEY:', financeflowKey ? 'Set (hidden)' : 'MISSING')
-
-    // Check credentials
-    if (!contratproUrl || !contratproKey) {
-      console.error('Missing ContratPro Supabase credentials')
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'ContratPro database not configured', 
-          sync_status: 'failed' 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!financeflowUrl || !financeflowKey) {
-      console.error('Missing FinanceFlow Supabase credentials')
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'FinanceFlow connection not configured', 
-          sync_status: 'failed' 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    console.log('Processing request:', { user_email, action })
 
     // Initialize Supabase clients
-    let contratproSupabase, financeflowSupabase;
+    const contratproUrl = Deno.env.get('SUPABASE_URL')!
+    const contratproKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const financeflowUrl = "https://elsilxqruurrbdebxndx.supabase.co"
+    const financeflowKey = Deno.env.get('FINANCEFLOW_SUPABASE_KEY')!
+
+    console.log('Environment variables loaded:', {
+      contratproUrl: contratproUrl ? 'OK' : 'MISSING',
+      contratproKey: contratproKey ? 'OK' : 'MISSING',
+      financeflowUrl: financeflowUrl,
+      financeflowKey: financeflowKey ? 'OK' : 'MISSING'
+    });
+
+    const contratproSupabase = createClient(contratproUrl, contratproKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+
+    const financeflowSupabase = createClient(financeflowUrl, financeflowKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+
+    // Buscar usuário no FinanceFlow
+    const { data: financeflowUser, error: userError } = await financeflowSupabase
+      .from('profiles')
+      .select('*')
+      .eq('email', user_email)
+      .single();
+
+    if (userError || !financeflowUser) {
+      console.error('[SYNC] Erro ao buscar perfil no FinanceFlow:', userError);
+      throw new Error('Usuário não encontrado no FinanceFlow');
+    }
+
+    // Buscar ou criar perfil no ContratPro
+    const { data: userProfile, error: profileError } = await contratproSupabase
+      .from('user_profiles')
+      .select('*')
+      .eq('email', user_email)
+      .maybeSingle();
+
+    let finalUserProfile = userProfile;
     
-    try {
-      console.log('=== Initializing Supabase clients ===')
-      contratproSupabase = createClient(contratproUrl, contratproKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      })
-      financeflowSupabase = createClient(financeflowUrl, financeflowKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      })
-      console.log('Supabase clients initialized successfully')
-    } catch (error) {
-      console.error('Error initializing Supabase clients:', error)
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Failed to initialize database connections', 
-          sync_status: 'failed',
-          details: error.message
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Se a ação for apenas buscar clientes, retornar apenas os clientes
-    if (action === 'fetch_clients') {
-      console.log('=== Ação: Buscar apenas clientes ===')
-      try {
-        const clients = await fetchFinanceFlowClientsByUserEmail(financeflowSupabase, user_email);
-        
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            action: 'fetch_clients',
-            user_email: user_email,
-            clients: clients,
-            clients_count: clients.length,
-            timestamp: new Date().toISOString()
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      } catch (error) {
-        console.error('Erro ao buscar clientes:', error)
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'Erro ao buscar clientes do FinanceFlow',
-            details: error.message,
-            timestamp: new Date().toISOString()
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    }
-
-    // Step 1: Fetch user from FinanceFlow
-    console.log('=== Step 1: Fetching user from FinanceFlow ===')
-    let financeflowUser;
-    try {
-      const { data, error } = await financeflowSupabase
-        .from('profiles')
-        .select(`
-          id,
-          email,
-          subscription,
-          name
-        `)
-        .eq('email', user_email)
-        .single()
-
-      if (error) {
-        console.error('FinanceFlow query error:', error)
-        throw error
-      }
-
-      financeflowUser = data
-      console.log('FinanceFlow user found:', { 
-        id: financeflowUser.id, 
-        email: financeflowUser.email, 
-        subscription: financeflowUser.subscription,
-        name: financeflowUser.name 
-      })
-    } catch (error) {
-      console.error('Error fetching FinanceFlow user:', error)
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'User not found in FinanceFlow or connection failed', 
-          sync_status: 'failed',
-          details: error.message
-        }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Step 2: Get ContratPro user
-    console.log('=== Step 2: Fetching user from ContratPro ===');
-    let contratproUser;
-    try {
-      // Buscar apenas em user_profiles
-      const { data: profileData, error: profileError } = await contratproSupabase.from('user_profiles').select('user_id, email, name').eq('email', user_email).maybeSingle();
-      if (!profileError && profileData) {
-        contratproUser = {
-          user: {
-            id: profileData.user_id,
-            email: profileData.email
-          }
-        };
-        console.log('ContratPro user found via user_profiles:', {
-          id: contratproUser.user.id,
-          email: contratproUser.user.email
-        });
-      } else {
-        throw new Error('User not found in ContratPro database');
-      }
-    } catch (error) {
-      console.error('Error fetching ContratPro user:', error);
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'User not found in ContratPro or insufficient permissions',
-        sync_status: 'failed',
-        details: error.message
-      }), {
-        status: 404,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      });
-    }
-
-    // Step 3: Map and sync subscription plan
-    console.log('=== Step 3: Mapping subscription plan ===');
-    const planMapping = {
-      'premium': 'Profissional',
-      'enterprise': 'Empresarial',
-      'enterprise-annual': 'Empresarial',
-      'free': 'Gratuito',
-      'gratuito': 'Gratuito'
-    };
-    const originalPlan = financeflowUser.subscription?.toLowerCase() || 'free';
-    const contratproPlan = planMapping[originalPlan] || 'Gratuito';
-    console.log(`Plan mapping: ${financeflowUser.subscription} -> ${contratproPlan}`);
-
-    // Step 3.1: Atualizar assinatura do usuário no ContratPro
-    console.log('=== Step 3.1: Atualizando assinatura do usuário no ContratPro ===');
-    try {
-      // Buscar plano no ContratPro
-      const { data: planData, error: planError } = await contratproSupabase
-        .from('subscription_plans')
-        .select('id')
-        .eq('name', contratproPlan)
-        .maybeSingle();
-      if (planError || !planData) {
-        throw new Error('Plano não encontrado no ContratPro: ' + contratproPlan);
-      }
-      // Verificar se já existe assinatura
-      const { data: userSub, error: userSubError } = await contratproSupabase
-        .from('user_subscriptions')
-        .select('id')
-        .eq('user_id', contratproUser.user.id)
-        .maybeSingle();
-      if (userSub && !userSubError) {
-        // Atualizar assinatura existente
-        const { error: updateError } = await contratproSupabase
-          .from('user_subscriptions')
-          .update({
-            plan_id: planData.id,
-            status: 'active',
-            updated_at: new Date().toISOString(),
-            ended_at: null
-          })
-          .eq('user_id', contratproUser.user.id);
-        if (updateError) throw updateError;
-        console.log('Assinatura do usuário atualizada para plano:', contratproPlan);
-      } else {
-        // Criar nova assinatura
-        const { error: insertError } = await contratproSupabase
-          .from('user_subscriptions')
-          .insert([{
-            user_id: contratproUser.user.id,
-            plan_id: planData.id,
-            status: 'active',
-            started_at: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }]);
-        if (insertError) throw insertError;
-        console.log('Assinatura do usuário criada para plano:', contratproPlan);
-      }
-      // (Opcional) Atualizar campo subscription em user_profiles
-      await contratproSupabase
+    if (!finalUserProfile) {
+      const { data: newProfile, error: createError } = await contratproSupabase
         .from('user_profiles')
-        .update({
-          subscription: contratproPlan,
+        .insert({
+          email: user_email,
+          name: financeflowUser.name || 'Usuário',
+          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', contratproUser.user.id);
-    } catch (error) {
-      console.error('Erro ao atualizar assinatura do usuário:', error);
-      // Não falhe a sync por isso, mas logue o erro
+        .select()
+        .single();
+
+      if (createError) {
+        console.error('[SYNC] Erro ao criar perfil no ContratPro:', createError);
+        throw createError;
+      }
+
+      finalUserProfile = newProfile;
+      console.log('[SYNC] Perfil criado no ContratPro:', finalUserProfile.id);
     }
 
-    // Step 4: Sync clients from FinanceFlow usando user_email
-    console.log('=== Step 4: Syncing clients usando user_email ===');
-    let clientsSynced = 0;
-    try {
-      // Usar a nova função para buscar clientes por user_email
-      const financeflowClients = await fetchFinanceFlowClientsByUserEmail(financeflowSupabase, user_email);
-      console.log(`=== Resultado da busca de clientes FinanceFlow ===`);
-      console.log(`Clientes encontrados: ${financeflowClients?.length || 0}`);
-      // Buscar clientes existentes do ContratPro
-      const { data: existingClients } = await contratproSupabase.from('clients').select('email, cnpj, name, origin').eq('user_id', contratproUser.user.id);
-      const existingEmails = new Set(existingClients?.filter(c => c.origin === 'financeflow').map(c => c.email).filter(Boolean) || []);
-      const existingCnpjs = new Set(existingClients?.filter(c => c.origin === 'financeflow').map(c => c.cnpj).filter(Boolean) || []);
-      const existingNames = new Set(existingClients?.filter(c => c.origin === 'financeflow').map(c => c.name).filter(Boolean) || []);
-      // Transformar e filtrar clientes
-      const clientsToInsert = financeflowClients.map((client) => ({
-        user_id: contratproUser.user.id,
-        company_id: null,
-        name: client.name || 'Cliente sem nome',
-        phone: client.phone || null,
-        email: client.email || null,
-        address: client.address || null,
-        cnpj: client.cnpj || null,
-        description: client.description || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        origin: 'financeflow'
-      })).filter((client) => {
-        // Evitar duplicatas por nome, email ou CNPJ
-        if (existingNames.has(client.name)) return false;
-        if (client.email && existingEmails.has(client.email)) return false;
-        if (client.cnpj && existingCnpjs.has(client.cnpj)) return false;
-        return true;
+    // Mapear plano do FinanceFlow para ContratPro
+    const planKey = (financeflowUser.subscription || 'free').toLowerCase();
+    const contratproPlan = planMapping[planKey] || 'Gratuito';
+
+    // Buscar plano no ContratPro
+    const { data: planData, error: planError } = await contratproSupabase
+      .from('subscription_plans')
+      .select('*')
+      .eq('name', contratproPlan)
+      .single();
+
+    if (planError || !planData) {
+      console.error('[SYNC] Plano não encontrado:', contratproPlan, planError);
+      throw new Error(`Plano ${contratproPlan} não encontrado`);
+    }
+
+    // Atualizar assinatura do usuário
+    const { error: subError } = await contratproSupabase
+      .from('user_subscriptions')
+      .upsert({
+        user_id: finalUserProfile.id,
+        plan_id: planData.id,
+        status: 'active',
+        start_date: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
       });
-      if (clientsToInsert.length > 0) {
-        const { error: insertError } = await contratproSupabase.from('clients').insert(clientsToInsert);
-        if (insertError) {
-          console.error('Erro ao inserir clientes:', insertError);
-          throw insertError;
-        }
-        clientsSynced = clientsToInsert.length;
-        console.log(`Clientes do FinanceFlow inseridos: ${clientsSynced}`);
-      } else {
-        console.log('Nenhum novo cliente do FinanceFlow para inserir.');
-      }
-      // Se o plano do usuário NÃO for elegível, remover/ocultar clientes de origem 'financeflow'
-      if (!['Profissional', 'Empresarial'].includes(contratproPlan)) {
-        // Remover clientes de origem 'financeflow' deste usuário
-        const { error: delError } = await contratproSupabase.from('clients').delete().eq('user_id', contratproUser.user.id).eq('origin', 'financeflow');
-        if (delError) {
-          console.error('Erro ao remover clientes de origem financeflow:', delError);
-        } else {
-          console.log('Clientes de origem financeflow removidos pois o plano não é elegível.');
-        }
-        clientsSynced = 0;
-      }
-    } catch (error) {
-      console.error('Erro durante sync de clientes:', error);
-      console.log('Continuando apesar do erro de sync de clientes...');
+
+    if (subError) {
+      console.error('[SYNC] Erro ao atualizar assinatura:', subError);
+      throw subError;
     }
 
-    console.log('=== Sync completed successfully ===')
-    console.log(`Plan: ${financeflowUser.subscription} -> ${contratproPlan}`)
-    console.log(`Clients synced: ${clientsSynced}`)
+    console.log('[SYNC] Plano sincronizado:', contratproPlan);
+
+    // Sincronizar clientes
+    const { data: clientsData, error: clientsError } = await financeflowSupabase
+      .from('clients')
+      .select(`
+        id, user_id, user_email, name, email, phone, address, cnpj, description, created_at, updated_at
+      `)
+      .eq('user_email', user_email);
+
+    if (clientsError) {
+      console.error('[SYNC] Erro ao buscar clientes:', clientsError);
+      throw clientsError;
+    }
+
+    const formattedClients = clientsData.map((client) => ({
+      financeflow_id: client.id,
+      user_id: finalUserProfile.id,
+      name: client.name,
+      email: client.email,
+      phone: client.phone,
+      address: client.address,
+      cnpj: client.cnpj,
+      description: client.description,
+      created_at: client.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }));
+
+    if (formattedClients.length > 0) {
+      const { error: syncError } = await contratproSupabase
+        .from('clients')
+        .upsert(formattedClients, {
+          onConflict: 'financeflow_id'
+        });
+
+      if (syncError) {
+        console.error('[SYNC] Erro ao sincronizar clientes:', syncError);
+        throw syncError;
+      }
+
+      console.log(`[SYNC] ${formattedClients.length} cliente(s) sincronizado(s)`);
+    } else {
+      console.log('[SYNC] Nenhum cliente encontrado para sincronizar.');
+    }
+
+    // Step 5: Return success response
+    console.log('=== Step 5: Sync completed successfully ===')
+    
+    const result = {
+      success: true,
+      sync_status: 'success',
+      user_email: user_email,
+      financeflow_user: financeflowUser ? {
+        id: financeflowUser.id,
+        subscription: financeflowUser.subscription
+      } : null,
+      contratpro_user: {
+        id: finalUserProfile.id,
+        email: finalUserProfile.email
+      },
+      final_plan: contratproPlan,
+      synced_clients: formattedClients.length,
+      synced_at: new Date().toISOString(),
+      message: `Plano ${contratproPlan} sincronizado com ${formattedClients.length} cliente(s).`
+    }
+
+    console.log('Sync result:', result)
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sync_status: 'success',
-        original_plan: financeflowUser.subscription,
-        mapped_plan: contratproPlan,
-        clients_synced: clientsSynced,
-        contracts_synced: 0,
-        synced_at: new Date().toISOString(),
-        message: `Sync completed successfully. Plan: ${contratproPlan}, Clients: ${clientsSynced}`,
-        financeflow_user_id: financeflowUser.id
-      }),
+      JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('=== FATAL ERROR ===')
-    console.error('Error details:', error)
-    console.error('Stack trace:', error.stack)
-    
+    console.error('[SYNC][ERROR]', error)
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: 'Internal server error during sync', 
-        sync_status: 'failed',
-        details: error.message,
-        timestamp: new Date().toISOString()
+        error: 'Erro interno no servidor',
+        details: error.message || error
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
