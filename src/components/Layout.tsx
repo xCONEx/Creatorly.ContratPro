@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -13,7 +12,17 @@ const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Inicializar sincronização com FinanceFlow
-  const { isLoading } = useFinanceFlowSync();
+  const { isLoading, syncPlan } = useFinanceFlowSync();
+
+  const handleSyncClick = async () => {
+    console.log('Manual sync triggered');
+    try {
+      const result = await syncPlan();
+      console.log('Sync result:', result);
+    } catch (error) {
+      console.error('Sync error:', error);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -31,11 +40,7 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Botão de teste para sincronização */}
           <div className="fixed bottom-4 right-4">
             <Button 
-              onClick={() => {
-                console.log('Manual sync triggered');
-                // Forçar sincronização manual
-                window.location.reload();
-              }}
+              onClick={handleSyncClick}
               disabled={isLoading}
             >
               {isLoading ? 'Sincronizando...' : 'Teste Sync'}
