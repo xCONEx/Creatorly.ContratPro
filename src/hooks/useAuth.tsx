@@ -55,59 +55,80 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (!existingProfile) {
-        // Create new profile with minimal data first
-        const minimalProfileData: any = {
-          id: user.id
+        // Get user data from Google OAuth
+        const nameValue = user.user_metadata?.name || user.user_metadata?.full_name || user.user_metadata?.full_name || 'Usuário';
+        const emailValue = user.email || '';
+        
+        // Get avatar URL from Google (available in user_metadata)
+        const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+        
+        console.log('Criando perfil com dados do Google:', {
+          name: nameValue,
+          email: emailValue,
+          avatar_url: avatarUrl
+        });
+
+        // Create profile with all available data
+        const profileData: any = {
+          id: user.id,
+          name: nameValue,
+          email: emailValue
         };
 
-        // Try to add name/full_name if the column exists
-        const nameValue = user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário';
-        
-        // Try different column names for name
-        try {
-          const { error: nameError } = await supabase
-            .from('user_profiles')
-            .insert({
-              ...minimalProfileData,
-              full_name: nameValue
-            });
+        // Add avatar_url if available
+        if (avatarUrl) {
+          profileData.avatar_url = avatarUrl;
+        }
 
-          if (nameError && nameError.message.includes('full_name')) {
-            // Try with 'name' column
-            const { error: nameError2 } = await supabase
+        try {
+          const { error } = await supabase
+            .from('user_profiles')
+            .insert(profileData);
+
+          if (error) {
+            console.error('Erro ao criar perfil do usuário:', error);
+            
+            // Fallback: try without avatar_url
+            const { error: fallbackError } = await supabase
               .from('user_profiles')
               .insert({
-                ...minimalProfileData,
-                name: nameValue
+                id: user.id,
+                name: nameValue,
+                email: emailValue
               });
 
-            if (nameError2 && nameError2.message.includes('name')) {
-              // If both fail, just insert with id
-              const { error } = await supabase
-                .from('user_profiles')
-                .insert(minimalProfileData);
-
-              if (error) {
-                console.error('Erro ao criar perfil do usuário (apenas id):', error);
-              } else {
-                console.log('Perfil criado com sucesso (apenas id)');
-              }
-            } else if (nameError2) {
-              console.error('Erro ao criar perfil do usuário (com name):', nameError2);
+            if (fallbackError) {
+              console.error('Erro no fallback ao criar perfil:', fallbackError);
             } else {
-              console.log('Perfil criado com sucesso (com name)');
+              console.log('Perfil criado com sucesso (sem avatar)');
             }
-          } else if (nameError) {
-            console.error('Erro ao criar perfil do usuário (com full_name):', nameError);
           } else {
-            console.log('Perfil criado com sucesso (com full_name)');
+            console.log('Perfil criado com sucesso (com avatar do Google)');
           }
         } catch (error) {
           console.error('Erro ao criar perfil do usuário:', error);
         }
+      } else {
+        // Profile exists, but let's update avatar if it's not set and we have one from Google
+        const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
+        
+        if (avatarUrl && !(existingProfile as any).avatar_url) {
+          console.log('Atualizando avatar do perfil existente com foto do Google');
+          
+          const { error } = await supabase
+            .from('user_profiles')
+            .update({ avatar_url: avatarUrl } as any)
+            .eq('id', user.id);
+
+          if (error) {
+            console.error('Erro ao atualizar avatar do perfil:', error);
+          } else {
+            console.log('Avatar atualizado com sucesso');
+          }
+        }
       }
     } catch (error) {
-      console.error('Erro ao criar perfil do usuário:', error);
+      console.error('Erro ao criar/atualizar perfil do usuário:', error);
     }
   };
 

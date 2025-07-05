@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Menu, User, LogOut, ChevronDown, User as UserIcon, Mail, Phone, Building, Save, X, CheckCircle } from 'lucide-react';
+import { AvatarWithInitials } from '@/components/ui/avatar-with-initials';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ interface UserProfile {
   email: string;
   phone: string;
   company: string;
+  avatar_url?: string;
   user_type: 'individual' | 'company' | 'agency';
   subscription: 'free' | 'basic' | 'professional' | 'enterprise';
 }
@@ -62,6 +64,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           email: user.email || '',
           phone: '',
           company: '',
+          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
           user_type: 'individual',
           subscription: 'free'
         });
@@ -72,6 +75,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         email: profile.email || '',
         phone: profile.phone || '',
         company: profile.company || '',
+        avatar_url: (profile as any).avatar_url || '',
         user_type: (profile.user_type as 'individual' | 'company' | 'agency') || 'individual',
         subscription: (profile.subscription as 'free' | 'basic' | 'professional' | 'enterprise') || 'free'
       });
@@ -154,9 +158,12 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         {user && (
           <div className="relative flex items-center gap-2">
             <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setMenuOpen((v) => !v)}>
-              <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg">
-                <User className="w-5 h-5" />
-              </div>
+              <AvatarWithInitials
+                src={profile.avatar_url}
+                name={profile.name}
+                size="sm"
+                className="w-9 h-9"
+              />
               <div className="flex flex-col text-right">
                 <span className="font-semibold text-gray-900 leading-tight">{profile.name}</span>
                 <span className="text-xs text-blue-600 font-medium capitalize">{profile.subscription}</span>
