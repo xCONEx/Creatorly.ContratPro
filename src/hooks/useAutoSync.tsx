@@ -23,14 +23,21 @@ export const useAutoSync = () => {
     setIsSyncing(true);
     
     try {
+      // Usar apenas a chave anon (mais segura)
+      const supabaseUrl = "https://tmxbgvlijandyvjwstsx.supabase.co";
+      const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRteGJndmxpamFuZHl2andzdHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2NDM0MTQsImV4cCI6MjA2NjIxOTQxNH0.z5lvkJC_dG-TCE5D26ae-7_wImq5BnGNRctYIWgtyiQ";
+      
+      console.log('Iniciando sincronização para:', user.email);
+      console.log('URL da função:', `${supabaseUrl}/functions/v1/sync-financeflow-plan`);
+      
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-financeflow-plan`,
+        `${supabaseUrl}/functions/v1/sync-financeflow-plan`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+            'apikey': supabaseAnonKey,
           },
           body: JSON.stringify({
             user_email: user.email,
@@ -39,7 +46,17 @@ export const useAutoSync = () => {
         }
       );
 
+      console.log('Status da resposta:', response.status);
+      console.log('Headers da resposta:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro na resposta:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
       const result: SyncResult = await response.json();
+      console.log('Resultado da sincronização:', result);
 
       if (result.success) {
         setLastSync(new Date());
