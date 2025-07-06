@@ -202,28 +202,38 @@ export const useSubscription = () => {
     if (!user) return 0;
 
     try {
-      console.log('Fetching contract count for user:', user.id);
-      
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
+      // Buscar contador seguro na tabela contracts_counter
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1; // Janeiro = 1
       const { data, error } = await supabase
+        .from('contracts_counter')
+        .select('count')
+        .eq('user_id', user.id)
+        .eq('year', year)
+        .eq('month', month)
+        .maybeSingle();
+      if (error) {
+        console.error('Erro ao buscar contracts_counter:', error);
+        // fallback para contagem tradicional
+      }
+      if (data && typeof data.count === 'number') {
+        return data.count;
+      }
+      // fallback: contar contratos criados no mês
+      const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const { data: contracts, error: contractsError } = await supabase
         .from('contracts')
         .select('id')
         .eq('user_id', user.id)
         .gte('created_at', startOfMonth.toISOString());
-
-      if (error) {
-        console.error('Error fetching contract count:', error);
+      if (contractsError) {
+        console.error('Erro ao buscar contratos:', contractsError);
         return 0;
       }
-      
-      const count = data?.length || 0;
-      console.log('Contract count:', count);
-      return count;
+      return contracts?.length || 0;
     } catch (error) {
-      console.error('Error fetching contract count:', error);
+      console.error('Erro ao buscar contagem de contratos:', error);
       return 0;
     }
   };
