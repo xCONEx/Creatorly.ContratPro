@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,10 @@ interface Contract {
   clients?: {
     name: string;
     email?: string;
+    cpf_cnpj?: string;
+    cnpj?: string;
+    address?: string;
+    phone?: string;
   };
   total_value?: number;
   due_date?: string;
@@ -42,6 +45,9 @@ const DownloadModal = ({ contract, isOpen, onClose }: DownloadModalProps) => {
         content: contract.content,
         client_name: contract.clients?.name || 'Cliente não informado',
         client_email: contract.clients?.email,
+        client_cnpj: contract.clients?.cpf_cnpj || contract.clients?.cnpj || '',
+        client_address: contract.clients?.address || '',
+        client_phone: contract.clients?.phone || '',
         total_value: contract.total_value,
         due_date: contract.due_date,
         created_at: contract.created_at,
