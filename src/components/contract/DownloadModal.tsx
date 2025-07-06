@@ -18,6 +18,11 @@ interface Contract {
   total_value?: number;
   due_date?: string;
   created_at: string;
+  user_name?: string;
+  user_email?: string;
+  user_cnpj?: string;
+  user_address?: string;
+  user_phone?: string;
 }
 
 interface DownloadModalProps {
@@ -39,7 +44,12 @@ const DownloadModal = ({ contract, isOpen, onClose }: DownloadModalProps) => {
         client_email: contract.clients?.email,
         total_value: contract.total_value,
         due_date: contract.due_date,
-        created_at: contract.created_at
+        created_at: contract.created_at,
+        user_name: contract.user_name,
+        user_email: contract.user_email,
+        user_cnpj: contract.user_cnpj,
+        user_address: contract.user_address,
+        user_phone: contract.user_phone
       });
 
       let mimeType = 'text/plain;charset=utf-8';
@@ -160,7 +170,7 @@ const DownloadModal = ({ contract, isOpen, onClose }: DownloadModalProps) => {
           </div>
 
           <div className="flex justify-end">
-            <Button variant="outline" onClick={onClose}>
+            <Button onClick={onClose} className="border border-gray-300 bg-white hover:bg-gray-50">
               Cancelar
             </Button>
           </div>

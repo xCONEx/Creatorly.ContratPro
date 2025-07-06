@@ -15,6 +15,11 @@ interface Contract {
   created_at: string;
   total_value?: number;
   due_date?: string;
+  user_name?: string;
+  user_email?: string;
+  user_cnpj?: string;
+  user_address?: string;
+  user_phone?: string;
   clients?: {
     name: string;
     email?: string;
@@ -34,16 +39,22 @@ const ContractViewModal = ({ contract, isOpen, onClose }: ContractViewModalProps
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'sent':
+      case 'enviado':
         return <Badge className="bg-yellow-100 text-yellow-800">Enviado</Badge>;
-      case 'signed':
+      case 'assinado':
         return <Badge className="bg-green-100 text-green-800">Assinado</Badge>;
-      case 'draft':
+      case 'rascunho':
         return <Badge className="bg-gray-100 text-gray-800">Rascunho</Badge>;
-      case 'expired':
+      case 'expirado':
         return <Badge className="bg-red-100 text-red-800">Expirado</Badge>;
+      case 'ativo':
+        return <Badge className="bg-blue-100 text-blue-800">Ativo</Badge>;
+      case 'finalizado':
+        return <Badge className="bg-green-100 text-green-800">Finalizado</Badge>;
+      case 'cancelado':
+        return <Badge className="bg-red-100 text-red-800">Cancelado</Badge>;
       default:
-        return <Badge>Desconhecido</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{status || 'Desconhecido'}</Badge>;
     }
   };
 
@@ -57,10 +68,8 @@ const ContractViewModal = ({ contract, isOpen, onClose }: ContractViewModalProps
               <div className="flex items-center gap-2">
                 {getStatusBadge(contract.status)}
                 <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => setShowDownloadModal(true)}
-                  className="ml-2"
+                  className="ml-2 border border-gray-300 bg-white hover:bg-gray-50 px-3 py-1 text-sm"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download

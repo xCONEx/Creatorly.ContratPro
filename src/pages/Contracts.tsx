@@ -33,12 +33,19 @@ import {
 type ContractListItem = {
   id: string;
   title: string;
-  status: ContractStatus;
+  content: string | null;
+  status: string;
   created_at: string;
   total_value: number | null;
+  due_date: string | null;
   end_date: string | null;
   description: string | null;
   client_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  user_cnpj: string | null;
+  user_address: string | null;
+  user_phone: string | null;
   clients: {
     name: string | null;
     email: string | null;
@@ -72,12 +79,19 @@ const Contracts = () => {
         .select(`
           id,
           title,
+          content,
           status,
           created_at,
           total_value,
+          due_date,
           end_date,
           description,
           client_id,
+          user_name,
+          user_email,
+          user_cnpj,
+          user_address,
+          user_phone,
           clients (
             name,
             email,

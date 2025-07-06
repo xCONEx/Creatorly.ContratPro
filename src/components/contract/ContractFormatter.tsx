@@ -7,6 +7,11 @@ export interface ContractData {
   total_value?: number;
   due_date?: string;
   created_at: string;
+  user_name?: string;
+  user_email?: string;
+  user_cnpj?: string;
+  user_address?: string;
+  user_phone?: string;
 }
 
 export const formatProfessionalContract = (contract: ContractData): string => {
@@ -113,13 +118,13 @@ Cidade: [________], [Estado], CEP: [_____-___]
 Telefone: [(__) _____-____]
 
 CONTRATADO:
-[Nome da empresa/pessoa física]
-CNPJ/CPF: [___.___.___-__ / __.___.___.____/____-__]
+${contract.user_name || '[Nome da empresa/pessoa física]'}
+CNPJ/CPF: ${contract.user_cnpj || '[___.___.___-__ / __.___.___.____/____-__]'}
 RG: [__.___.___ SSP/__]
-Endereço: [Rua/Av., nº ___, Bairro]
+Endereço: ${contract.user_address || '[Rua/Av., nº ___, Bairro]'}
 Cidade: [________], [Estado], CEP: [_____-___]
-Telefone: [(__) _____-____]
-E-mail: [________________@_______.com]
+Telefone: ${contract.user_phone || '[(__) _____-____]'}
+E-mail: ${contract.user_email || '[________________@_______.com]'}
 
 ═══════════════════════════════════════════════════════════════════════════
 
