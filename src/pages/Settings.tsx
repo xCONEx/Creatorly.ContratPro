@@ -52,6 +52,38 @@ interface UserSettings {
   updated_at: string;
 }
 
+// Mapeamento de nomes bonitos para recursos
+const featureNames: Record<string, string> = {
+  basicTemplates: 'Templates Básicos',
+  pdfExport: 'Exportação em PDF',
+  emailSupport: 'Suporte por E-mail',
+  premiumTemplates: 'Templates Premium',
+  electronicSignature: 'Assinatura Eletrônica',
+  prioritySupport: 'Suporte Prioritário',
+  basicApi: 'API Básica',
+  basicReports: 'Relatórios Básicos',
+  emailNotifications: 'Notificações por E-mail',
+  autoBackup: 'Backup Automático',
+  advancedClientManagement: 'Gestão Avançada de Clientes',
+  customTemplates: 'Templates Personalizados',
+  unlimitedContracts: 'Contratos Ilimitados',
+  fullApi: 'API Completa',
+  advancedReports: 'Relatórios Avançados',
+  analytics: 'Analytics',
+  support24_7: 'Suporte 24/7',
+  adminPanel: 'Painel Administrativo',
+  advancedIntegrations: 'Integrações Avançadas',
+  zapierIntegration: 'Integração com Zapier',
+  whiteLabel: 'White Label',
+  fullBackup: 'Backup Completo',
+  multiUser: 'Multiusuário',
+  advancedSignature: 'Assinatura Avançada',
+  automations: 'Automações',
+  multiFormatExport: 'Exportação Multi-Formato',
+  compliance: 'Compliance',
+  sso: 'Login Único (SSO)'
+};
+
 const Settings = () => {
   const { user } = useAuth();
   const { subscription, plans, contractCount } = useSubscription();
@@ -560,14 +592,24 @@ const Settings = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-700">Contratos este mês:</span>
                           <span className="text-sm font-bold text-gray-900">
-                            {contractCount} / ∞
+                            {(() => {
+                              if (currentPlan.name === 'Empresarial') return `${contractCount} / Ilimitado`;
+                              if (currentPlan.name === 'Profissional') return `${contractCount} / 100`;
+                              if (currentPlan.name === 'Gratuito') return `${contractCount} / 10`;
+                              return `${contractCount}`;
+                            })()}
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ 
-                              width: `${Math.min((contractCount / 100) * 100, 100)}%` 
+                              width: (() => {
+                                if (currentPlan.name === 'Empresarial') return '100%';
+                                if (currentPlan.name === 'Profissional') return `${Math.min((contractCount / 100) * 100, 100)}%`;
+                                if (currentPlan.name === 'Gratuito') return `${Math.min((contractCount / 10) * 100, 100)}%`;
+                                return '0%';
+                              })()
                             }}
                           />
                         </div>
@@ -583,7 +625,7 @@ const Settings = () => {
                           {Array.isArray(currentPlan.features) ? currentPlan.features.map((feature, index) => (
                             <li key={index} className="flex items-start gap-3">
                               <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-sm text-gray-700">{feature}</span>
+                              <span className="text-sm text-gray-700">{featureNames[feature] || feature}</span>
                             </li>
                           )) : (
                             <li className="flex items-start gap-3">
