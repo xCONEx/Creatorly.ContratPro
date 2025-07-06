@@ -272,7 +272,7 @@ const Settings = () => {
         {/* Content Area */}
         <div className="lg:col-span-3">
           {/* Profile Tab */}
-          {(activeTab === 'profile' || window.innerWidth >= 1024) && (
+          {activeTab === 'profile' && (
             <div className="space-y-6">
               <Card className="border-0 shadow-sm bg-white">
                 <CardHeader className="pb-4">
@@ -288,14 +288,6 @@ const Settings = () => {
                   <form onSubmit={handleProfileUpdate} className="space-y-6">
                     {/* Avatar Section */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <div className="flex-shrink-0">
-                        <AvatarWithInitials
-                          src={profile.avatar_url}
-                          name={profile.name}
-                          size="lg"
-                          className="w-20 h-20"
-                        />
-                      </div>
                       <div className="flex-1 min-w-0">
                         <AvatarUpload
                           value={profile.avatar_url || ''}
@@ -363,7 +355,7 @@ const Settings = () => {
           )}
 
           {/* Preferences Tab */}
-          {(activeTab === 'preferences' || window.innerWidth >= 1024) && (
+          {activeTab === 'preferences' && (
             <div className="space-y-6">
               <Card className="border-0 shadow-sm bg-white">
                 <CardHeader className="pb-4">
@@ -476,7 +468,7 @@ const Settings = () => {
           )}
 
           {/* Subscription Tab */}
-          {(activeTab === 'subscription' || window.innerWidth >= 1024) && (
+          {activeTab === 'subscription' && (
             <div className="space-y-6">
               <Card className="border-0 shadow-sm bg-white">
                 <CardHeader className="pb-4">
