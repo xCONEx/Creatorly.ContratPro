@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,7 +19,27 @@ import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Configuração otimizada do QueryClient para performance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Dados considerados frescos por 5 minutos
+      staleTime: 5 * 60 * 1000,
+      // Cache mantido por 10 minutos
+      gcTime: 10 * 60 * 1000,
+      // Retry apenas 1 vez em caso de erro
+      retry: 1,
+      // Refetch apenas quando a janela ganha foco
+      refetchOnWindowFocus: false,
+      // Refetch apenas quando reconecta
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      // Retry apenas 1 vez para mutations
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
