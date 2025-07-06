@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     email: '',
@@ -45,10 +46,35 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     subscription: 'free'
   });
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
+    }
+  }, [user]);
+
+  // Fecha o menu quando clicar fora dele
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  // Fecha o menu quando não há usuário ou quando o usuário muda
+  useEffect(() => {
+    if (!user) {
+      setMenuOpen(false);
     }
   }, [user]);
 
@@ -145,7 +171,40 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      setIsLoggingOut(true);
+      setMenuOpen(false); // Fecha o menu dropdown imediatamente
+      
+      // Pequeno delay para feedback visual
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      await signOut();
+      
+      // Limpa estados locais
+      setProfile({
+        name: '',
+        email: '',
+        phone: '',
+        company: '',
+        user_type: 'individual',
+        subscription: 'free'
+      });
+      
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+      
+    } catch (error) {
+      console.error('Erro durante logout:', error);
+      toast({
+        title: "Erro no logout",
+        description: "Ocorreu um erro ao fazer logout. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const getCurrentPlan = () => {
@@ -170,7 +229,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         </div>
 
         {user && (
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <div 
               className="flex items-center gap-2 cursor-pointer select-none p-2 rounded-lg hover:bg-gray-50 transition-colors" 
               onClick={() => setMenuOpen((v) => !v)}
@@ -202,11 +261,21 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                   <span>Editar Perfil</span>
                 </button>
                 <button
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 text-left"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handleSignOut}
+                  disabled={isLoggingOut}
                 >
-                  <LogOut className="w-4 h-4" /> 
-                  <span>Sair</span>
+                  {isLoggingOut ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      <span>Saindo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogOut className="w-4 h-4" /> 
+                      <span>Sair</span>
+                    </>
+                  )}
                 </button>
               </div>
             )}
