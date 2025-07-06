@@ -35,6 +35,9 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  company?: string;
+  address?: string;
   avatar_url?: string;
   created_at: string;
   updated_at: string;
@@ -56,6 +59,9 @@ const Settings = () => {
     id: '',
     name: '',
     email: '',
+    phone: '',
+    company: '',
+    address: '',
     avatar_url: '',
     created_at: '',
     updated_at: ''
@@ -83,7 +89,7 @@ const Settings = () => {
 
     try {
       const { data: profile, error } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
@@ -92,6 +98,9 @@ const Settings = () => {
           id: profile.id || '',
           name: profile.name || '',
           email: profile.email || '',
+          phone: profile.phone || '',
+          company: profile.company || '',
+          address: profile.address || '',
           avatar_url: (profile as any).avatar_url || '',
           created_at: profile.created_at || '',
           updated_at: profile.updated_at || ''
@@ -101,6 +110,9 @@ const Settings = () => {
           id: '',
           name: '',
           email: '',
+          phone: '',
+          company: '',
+          address: '',
           avatar_url: '',
           created_at: '',
           updated_at: ''
@@ -144,11 +156,14 @@ const Settings = () => {
     setIsLoading(true);
     try {
       const { error: updateError } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .upsert({
           id: user.id,
           name: profile.name,
           email: profile.email,
+          phone: profile.phone,
+          company: profile.company,
+          address: profile.address,
           avatar_url: profile.avatar_url,
           updated_at: new Date().toISOString()
         }, {
@@ -327,6 +342,47 @@ const Settings = () => {
                           disabled
                         />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone" className="text-sm font-medium">
+                          Telefone
+                        </Label>
+                        <Input
+                          id="phone"
+                          value={profile.phone || ''}
+                          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                          placeholder="(11) 99999-9999"
+                          className="h-11"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="company" className="text-sm font-medium">
+                          CNPJ/CPF
+                        </Label>
+                        <Input
+                          id="company"
+                          value={profile.company || ''}
+                          onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                          placeholder="00.000.000/0000-00"
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="address" className="text-sm font-medium">
+                        Endereço completo
+                      </Label>
+                      <Input
+                        id="address"
+                        value={profile.address || ''}
+                        onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                        placeholder="Rua, número, bairro, cidade - Estado, CEP"
+                        className="h-11"
+                      />
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4">
