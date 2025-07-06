@@ -49,6 +49,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const createUserProfile = async (user: User) => {
     try {
+      // Debug: Log all user metadata
+      console.log('User metadata completo:', user.user_metadata);
+      console.log('User email:', user.email);
+      
       // Check if profile already exists
       const { data: existingProfile } = await supabase
         .from('user_profiles')
@@ -67,7 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Criando perfil com dados do Google:', {
           name: nameValue,
           email: emailValue,
-          avatar_url: avatarUrl
+          avatar_url: avatarUrl,
+          user_metadata_keys: Object.keys(user.user_metadata || {})
         });
 
         // Create profile with all available data
@@ -83,6 +88,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         try {
+          console.log('Tentando inserir perfil com dados:', profileData);
+          
           const { error } = await supabase
             .from('user_profiles')
             .insert(profileData);
@@ -91,13 +98,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error('Erro ao criar perfil do usuário:', error);
             
             // Fallback: try without avatar_url
+            const fallbackData = {
+              id: user.id,
+              name: nameValue,
+              email: emailValue
+            };
+            
+            console.log('Tentando fallback sem avatar:', fallbackData);
+            
             const { error: fallbackError } = await supabase
               .from('user_profiles')
-              .insert({
-                id: user.id,
-                name: nameValue,
-                email: emailValue
-              });
+              .insert(fallbackData);
 
             if (fallbackError) {
               console.error('Erro no fallback ao criar perfil:', fallbackError);
@@ -114,6 +125,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Profile exists, but let's update avatar if it's not set and we have one from Google
         const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
         
+        console.log('Perfil existente encontrado:', {
+          existingAvatar: (existingProfile as any).avatar_url,
+          newAvatarUrl: avatarUrl,
+          hasNewAvatar: !!avatarUrl,
+          needsUpdate: avatarUrl && !(existingProfile as any).avatar_url
+        });
+        
         if (avatarUrl && !(existingProfile as any).avatar_url) {
           console.log('Atualizando avatar do perfil existente com foto do Google');
           
@@ -127,6 +145,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             console.log('Avatar atualizado com sucesso');
           }
+        } else if (avatarUrl) {
+          console.log('Avatar já existe no perfil, não precisa atualizar');
+        } else {
+          console.log('Nenhum avatar disponível do Google');
         }
       }
     } catch (error) {
