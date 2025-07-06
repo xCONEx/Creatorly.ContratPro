@@ -223,16 +223,18 @@ export const useSubscription = () => {
         return null;
       }
 
-      // Criar assinatura gratuita
+      // Criar assinatura gratuita usando upsert para evitar duplicação
       const { data: newSubscription, error: subError } = await supabase
         .from('user_subscriptions')
-        .insert({
+        .upsert({
           user_id: user.id,
           plan_id: freePlan.id,
           status: 'active',
           start_date: new Date().toISOString(),
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
         })
         .select(`
           *,
