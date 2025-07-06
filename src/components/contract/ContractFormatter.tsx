@@ -112,15 +112,12 @@ CONTRATANTE:
 ${contract.client_name}
 ${contract.client_email ? `E-mail: ${contract.client_email}` : 'E-mail: [________________@_______.com]'}
 CPF/CNPJ: [___.___.___-__ / __.___.___.____/____-__]
-RG: [__.___.___ SSP/__]
 Endereço: [Rua/Av., nº ___, Bairro]
-Cidade: [________], [Estado], CEP: [_____-___]
 Telefone: [(__) _____-____]
 
 CONTRATADO:
 ${contract.user_name || '[Nome da empresa/pessoa física]'}
 CNPJ/CPF: ${contract.user_cnpj || '[___.___.___-__ / __.___.___.____/____-__]'}
-RG: [__.___.___ SSP/__]
 Endereço: ${contract.user_address || '[Rua/Av., nº ___, Bairro]'}
 Cidade: [________], [Estado], CEP: [_____-___]
 Telefone: ${contract.user_phone || '[(__) _____-____]'}
