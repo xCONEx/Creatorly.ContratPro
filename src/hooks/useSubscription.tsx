@@ -1,26 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from './use-toast';
 
 interface SubscriptionPlan {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
-  price: number;
-  duration_days: number | null;
+  price: number | null;
+  price_monthly: number | null;
+  price_yearly: number | null;
+  max_contracts_per_month: number | null;
+  api_access: boolean | null;
   features: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
 
 interface UserSubscription {
-  id: number;
+  id: string;
   user_id: string;
-  plan_id: number;
+  plan_id: string;
   start_date: string;
   end_date: string | null;
-  is_active: boolean;
+  status: string;
   created_at: string;
   updated_at: string;
   plan: SubscriptionPlan;
@@ -33,38 +36,49 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState(true);
   const [contractCount, setContractCount] = useState(0);
 
-  useEffect(() => {
-    if (user) {
-      console.log('User authenticated, initializing subscription data for:', user.id);
-      initializeUserData();
-    } else {
-      console.log('No user authenticated');
+  // Memoizar a função de inicialização para evitar re-renders desnecessários
+  const initializeUserData = useCallback(async () => {
+    if (!user) {
       setLoading(false);
+      return;
     }
-  }, [user]);
 
-  const initializeUserData = async () => {
     try {
-      console.log('Starting data initialization...');
+      console.log('Starting data initialization for user:', user.id);
       
-      // Primeiro buscar os planos
-      await fetchPlans();
-      
-      // Depois buscar/criar a assinatura do usuário
-      await fetchSubscription();
-      
-      // Por último buscar contagem de contratos
-      await fetchContractCount();
-      
+      // Executar todas as chamadas em paralelo para melhor performance
+      const [plansResult, subscriptionResult, contractCountResult] = await Promise.allSettled([
+        fetchPlans(),
+        fetchSubscription(),
+        fetchContractCount()
+      ]);
+
+      // Processar resultados
+      if (plansResult.status === 'fulfilled') {
+        setPlans(plansResult.value);
+      }
+
+      if (subscriptionResult.status === 'fulfilled') {
+        setSubscription(subscriptionResult.value);
+      }
+
+      if (contractCountResult.status === 'fulfilled') {
+        setContractCount(contractCountResult.value);
+      }
+
       console.log('Data initialization completed successfully');
     } catch (error) {
       console.error('Error during data initialization:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const fetchPlans = async () => {
+  useEffect(() => {
+    initializeUserData();
+  }, [initializeUserData]);
+
+  const fetchPlans = async (): Promise<SubscriptionPlan[]> => {
     try {
       console.log('Fetching subscription plans...');
       
@@ -84,10 +98,8 @@ export const useSubscription = () => {
                  typeof plan.features === 'string' ? 
                    (() => {
                      try {
-                       // Tentar fazer parse do JSON
                        return JSON.parse(plan.features);
                      } catch (e) {
-                       // Se falhar, verificar se é texto em português e extrair features
                        const featuresText = plan.features || '';
                        const features = [];
                        
@@ -110,18 +122,18 @@ export const useSubscription = () => {
       }));
       
       console.log('Plans fetched successfully:', transformedPlans.length);
-      setPlans(transformedPlans);
+      return transformedPlans;
       
     } catch (error) {
       console.error('Error in fetchPlans:', error);
-      setPlans([]);
+      return [];
     }
   };
 
-  const fetchSubscription = async () => {
+  const fetchSubscription = async (): Promise<UserSubscription | null> => {
     if (!user) {
       console.log('No user available for fetchSubscription');
-      return;
+      return null;
     }
 
     try {
@@ -154,11 +166,9 @@ export const useSubscription = () => {
                          try {
                            return JSON.parse(data.plan.features);
                          } catch (e) {
-                           // Se falhar, verificar se é texto em português e extrair features
                            const featuresText = data.plan.features || '';
                            const features = [];
                            
-                           // Extrair features baseadas em palavras-chave
                            if (featuresText.includes('contrato') || featuresText.includes('Contrato')) features.push('contracts');
                            if (featuresText.includes('template') || featuresText.includes('Template')) features.push('templates');
                            if (featuresText.includes('API') || featuresText.includes('api')) features.push('api');
@@ -177,76 +187,19 @@ export const useSubscription = () => {
           }
         };
         
-        setSubscription(transformedData);
+        return transformedData;
       } else {
-        console.log('No subscription found, user might be new or have issues');
-        // Se não encontrou assinatura, não tentar criar aqui
-        // O trigger do banco deve ter criado automaticamente
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Aguardar 2 segundos
-        
-        // Tentar buscar novamente
-        const { data: retryData, error: retryError } = await supabase
-          .from('user_subscriptions')
-          .select(`
-            *,
-            plan:subscription_plans(*)
-          `)
-          .eq('user_id', user.id)
-          .maybeSingle();
-          
-        if (retryError) {
-          console.error('Error on retry fetch:', retryError);
-          throw retryError;
-        }
-        
-        if (retryData && retryData.plan) {
-          console.log('Subscription found on retry:', retryData);
-          const transformedRetryData = {
-            ...retryData,
-            plan: {
-              ...retryData.plan,
-              features: Array.isArray(retryData.plan.features) ? retryData.plan.features : 
-                       typeof retryData.plan.features === 'string' ? 
-                         (() => {
-                           try {
-                             return JSON.parse(retryData.plan.features);
-                           } catch (e) {
-                             // Se falhar, verificar se é texto em português e extrair features
-                             const featuresText = retryData.plan.features || '';
-                             const features = [];
-                             
-                             // Extrair features baseadas em palavras-chave
-                             if (featuresText.includes('contrato') || featuresText.includes('Contrato')) features.push('contracts');
-                             if (featuresText.includes('template') || featuresText.includes('Template')) features.push('templates');
-                             if (featuresText.includes('API') || featuresText.includes('api')) features.push('api');
-                             if (featuresText.includes('relatório') || featuresText.includes('Relatório')) features.push('reports');
-                             if (featuresText.includes('assinatura') || featuresText.includes('Assinatura')) features.push('signature');
-                             if (featuresText.includes('notificação') || featuresText.includes('Notificação')) features.push('notifications');
-                             if (featuresText.includes('backup') || featuresText.includes('Backup')) features.push('backup');
-                             if (featuresText.includes('integração') || featuresText.includes('Integração')) features.push('integrations');
-                             if (featuresText.includes('analytics') || featuresText.includes('Analytics')) features.push('analytics');
-                             if (featuresText.includes('suporte') || featuresText.includes('Suporte')) features.push('support');
-                             
-                             console.warn('Failed to parse retry plan features JSON, extracted features from text:', featuresText, '->', features);
-                             return features;
-                           }
-                         })() : []
-            }
-          };
-          setSubscription(transformedRetryData);
-        } else {
-          console.log('Still no subscription found after retry');
-          setSubscription(null);
-        }
+        console.log('No subscription found for user');
+        return null;
       }
     } catch (error) {
       console.error('Error in fetchSubscription:', error);
-      setSubscription(null);
+      return null;
     }
   };
 
-  const fetchContractCount = async () => {
-    if (!user) return;
+  const fetchContractCount = async (): Promise<number> => {
+    if (!user) return 0;
 
     try {
       console.log('Fetching contract count for user:', user.id);
@@ -263,14 +216,15 @@ export const useSubscription = () => {
 
       if (error) {
         console.error('Error fetching contract count:', error);
-        return;
+        return 0;
       }
       
       const count = data?.length || 0;
       console.log('Contract count:', count);
-      setContractCount(count);
+      return count;
     } catch (error) {
       console.error('Error fetching contract count:', error);
+      return 0;
     }
   };
 
@@ -281,12 +235,10 @@ export const useSubscription = () => {
     }
 
     if (feature === 'contracts') {
-      // Usar limite padrão baseado no plano ou permitir ilimitado
       const planName = subscription.plan.name;
       const limit = planName === 'Empresarial' ? -1 : 
-                   planName === 'Profissional' ? 100 : 10; // Valores padrão
+                   planName === 'Profissional' ? 100 : 10;
       
-      // Se limit é -1, significa ilimitado
       if (limit === -1) {
         return true;
       }
@@ -302,7 +254,6 @@ export const useSubscription = () => {
     }
 
     if (feature === 'api') {
-      // Verificar se o plano tem acesso à API baseado no nome
       const planName = subscription.plan.name;
       const hasApiAccess = planName === 'Profissional' || planName === 'Empresarial';
       
@@ -319,11 +270,9 @@ export const useSubscription = () => {
     return true;
   };
 
-  // Função para verificar se tem acesso a uma feature específica
   const hasFeatureAccess = (feature: string) => {
     if (!subscription) return false;
     
-    // Features específicas por plano
     const planFeatures = {
       'Gratuito': ['basic_templates', 'pdf_export', 'email_support'],
       'Profissional': [
@@ -349,7 +298,6 @@ export const useSubscription = () => {
     return features.includes(feature);
   };
 
-  // Função para obter limite de contratos formatado
   const getContractLimitText = () => {
     if (!subscription) return 'N/A';
     
@@ -361,6 +309,14 @@ export const useSubscription = () => {
     return `${contractCount}/${limit}`;
   };
 
+  const refetch = useCallback(() => {
+    console.log('Refetching subscription data...');
+    if (user) {
+      setLoading(true);
+      initializeUserData();
+    }
+  }, [user, initializeUserData]);
+
   return {
     subscription,
     plans,
@@ -369,11 +325,6 @@ export const useSubscription = () => {
     checkPlanLimit,
     hasFeatureAccess,
     getContractLimitText,
-    refetch: () => {
-      console.log('Refetching subscription data...');
-      if (user) {
-        initializeUserData();
-      }
-    }
+    refetch
   };
 };

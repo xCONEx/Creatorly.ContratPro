@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useSubscription } from './useSubscription';
 import { toast } from './use-toast';
@@ -7,15 +7,13 @@ export const useAutoSync = () => {
   const { user, session } = useAuth();
   const { subscription, refetch } = useSubscription();
   const hasSynced = useRef(false);
+  const isSyncing = useRef(false);
 
-  useEffect(() => {
-    if (user && !hasSynced.current) {
-      syncData();
-    }
-  }, [user]);
+  // Memoizar a função de sincronização para evitar re-criações
+  const syncData = useCallback(async () => {
+    if (!user || hasSynced.current || isSyncing.current) return;
 
-  const syncData = async () => {
-    if (!user || hasSynced.current) return;
+    isSyncing.current = true;
 
     try {
       console.log('🔄 Iniciando sincronização automática...');
@@ -61,8 +59,21 @@ export const useAutoSync = () => {
       console.error('❌ Erro na sincronização automática:', error);
     } finally {
       hasSynced.current = true;
+      isSyncing.current = false;
     }
-  };
+  }, [user, refetch]);
+
+  // Executar sincronização apenas quando o usuário estiver autenticado e não tiver sincronizado ainda
+  useEffect(() => {
+    if (user && session && !hasSynced.current) {
+      // Pequeno delay para garantir que outros hooks estejam prontos
+      const timer = setTimeout(() => {
+        syncData();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, session, syncData]);
 
   return { syncData };
 }; 

@@ -149,40 +149,57 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm sticky top-0 z-30">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
-        <div className="flex items-center gap-2">
-          <Button onClick={onMenuToggle} className="lg:hidden p-2" aria-label="Abrir menu">
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={onMenuToggle} 
+            className="lg:hidden p-2 h-10 w-10 rounded-lg hover:bg-gray-100" 
+            aria-label="Abrir menu"
+          >
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-blue-700 tracking-tight select-none">ContratPro</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-blue-700 tracking-tight select-none">
+            ContratPro
+          </h1>
         </div>
+
         {user && (
-          <div className="relative flex items-center gap-2">
-            <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setMenuOpen((v) => !v)}>
+          <div className="relative">
+            <div 
+              className="flex items-center gap-2 cursor-pointer select-none p-2 rounded-lg hover:bg-gray-50 transition-colors" 
+              onClick={() => setMenuOpen((v) => !v)}
+            >
               <AvatarWithInitials
                 src={profile.avatar_url}
                 name={profile.name}
                 size="sm"
-                className="w-9 h-9"
+                className="w-8 h-8 sm:w-9 sm:h-9"
               />
-              <div className="flex flex-col text-right">
-                <span className="font-semibold text-gray-900 leading-tight">{profile.name}</span>
-                <span className="text-xs text-blue-600 font-medium capitalize">{profile.subscription}</span>
+              <div className="hidden sm:flex flex-col text-right">
+                <span className="font-semibold text-gray-900 leading-tight text-sm">
+                  {profile.name}
+                </span>
+                <span className="text-xs text-blue-600 font-medium capitalize">
+                  {profile.subscription}
+                </span>
               </div>
               <ChevronDown className="w-4 h-4 text-gray-400 ml-1" />
             </div>
+            
             {menuOpen && (
-              <div className="absolute right-0 mt-12 w-48 bg-white border rounded-lg shadow-lg py-2 z-50 animate-fade-in">
+              <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white border rounded-lg shadow-lg py-2 z-50 animate-in fade-in-0 zoom-in-95">
                 <button
-                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-blue-50 text-gray-700"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 text-gray-700 text-left"
                   onClick={() => { setIsProfileOpen(true); setMenuOpen(false); }}
                 >
-                  <User className="w-4 h-4" /> Perfil
+                  <User className="w-4 h-4" /> 
+                  <span>Editar Perfil</span>
                 </button>
                 <button
-                  className="w-full flex items-center gap-2 px-4 py-2 hover:bg-blue-50 text-gray-700"
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600 text-left"
                   onClick={handleSignOut}
                 >
-                  <LogOut className="w-4 h-4" /> Sair
+                  <LogOut className="w-4 h-4" /> 
+                  <span>Sair</span>
                 </button>
               </div>
             )}
@@ -191,7 +208,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
       </div>
       
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader className="relative">
             <DialogTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
               <UserIcon className="w-5 h-5 text-blue-600" />
@@ -199,103 +216,88 @@ export default function Header({ onMenuToggle }: HeaderProps) {
             </DialogTitle>
             <button
               onClick={() => setIsProfileOpen(false)}
-              className="absolute right-4 top-4 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              className="absolute right-0 top-0 p-2 hover:bg-gray-100 rounded-lg"
             >
-              <X className="w-4 h-4 text-gray-500" />
+              <X className="w-4 h-4" />
             </button>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
-            {/* Nome */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <UserIcon className="w-4 h-4" />
-                Nome Completo
-              </Label>
-              <Input
-                id="name"
-                value={profile.name}
-                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Digite seu nome completo"
-              />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome completo *</Label>
+                <Input
+                  id="name"
+                  value={profile.name}
+                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  required
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  value={profile.email}
+                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  type="email"
+                  className="w-full"
+                  disabled
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={profile.phone}
+                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  type="tel"
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="company">Empresa</Label>
+                <Input
+                  id="company"
+                  value={profile.company}
+                  onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                  className="w-full"
+                />
+              </div>
             </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="seu@email.com"
-              />
-            </div>
-
-            {/* Telefone */}
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                Telefone
-              </Label>
-              <Input
-                id="phone"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-
-            {/* Empresa */}
-            <div className="space-y-2">
-              <Label htmlFor="company" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Building className="w-4 h-4" />
-                Empresa
-              </Label>
-              <Input
-                id="company"
-                value={profile.company}
-                onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-                className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                placeholder="Nome da sua empresa"
-              />
-            </div>
-
-            {/* Botões */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                onClick={() => setIsProfileOpen(false)}
-                className="flex-1 h-11 border-gray-300 hover:bg-gray-50 bg-white text-gray-700"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleProfileUpdate}
+            
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button 
+                onClick={handleProfileUpdate} 
                 disabled={isLoading}
-                className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                     Salvando...
-                  </div>
+                  </>
                 ) : isSuccess ? (
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
                     Salvo!
-                  </div>
+                  </>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Save className="w-4 h-4" />
-                    Salvar
-                  </div>
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Salvar Alterações
+                  </>
                 )}
+              </Button>
+              
+              <Button 
+                onClick={() => setIsProfileOpen(false)}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
+              >
+                Cancelar
               </Button>
             </div>
           </div>

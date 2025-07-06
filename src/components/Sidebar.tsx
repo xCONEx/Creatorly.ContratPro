@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -35,25 +34,18 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   return (
     <>
-      {/* Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-      
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out z-50",
+          "fixed left-0 top-0 h-full w-64 sm:w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out z-50 shadow-lg",
           isOpen ? "translate-x-0" : "-translate-x-full",
-          "lg:translate-x-0 lg:static lg:z-auto"
+          "lg:translate-x-0 lg:static lg:z-auto lg:shadow-none"
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b border-slate-200">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
               <FileText className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -61,31 +53,51 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </h1>
           </div>
           <Button
-            variant="ghost"
-            size="sm"
             onClick={onClose}
-            className="lg:hidden"
+            className="lg:hidden p-2 h-8 w-8 rounded-lg hover:bg-gray-100 bg-transparent"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
 
-        <nav className="p-4 space-y-2">
+        {/* Navigation */}
+        <nav className="p-4 space-y-1">
           {menuItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               onClick={onClose}
               className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors",
-                location.pathname === item.path && "bg-blue-50 text-blue-600 border border-blue-200"
+                "flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200 font-medium",
+                location.pathname === item.path && "bg-blue-50 text-blue-600 border border-blue-200 shadow-sm"
               )}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm">{item.label}</span>
             </Link>
           ))}
         </nav>
+
+        {/* Footer - User Info */}
+        {user && (
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 bg-gray-50">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-semibold">
+                  {user.email?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

@@ -11,7 +11,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from '@/hooks/use-toast';
-import { User, Settings as SettingsIcon, Bell, Crown, Building2, Users } from 'lucide-react';
+import { 
+  User, 
+  Settings as SettingsIcon, 
+  Bell, 
+  Crown, 
+  Building2, 
+  Users, 
+  Mail, 
+  Phone, 
+  Globe, 
+  Palette,
+  Shield,
+  Zap,
+  CheckCircle,
+  Save,
+  X
+} from 'lucide-react';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { AvatarWithInitials } from '@/components/ui/avatar-with-initials';
 
@@ -53,6 +69,7 @@ const Settings = () => {
     updated_at: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('profile');
 
   useEffect(() => {
     if (user) {
@@ -197,214 +214,351 @@ const Settings = () => {
 
   const currentPlan = getCurrentPlan();
 
+  const tabs = [
+    { id: 'profile', label: 'Perfil', icon: User },
+    { id: 'preferences', label: 'Preferências', icon: SettingsIcon },
+    { id: 'subscription', label: 'Assinatura', icon: Crown },
+  ];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
-        <p className="text-muted-foreground">Gerencie seu perfil e preferências da conta</p>
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-gray-900">Configurações</h1>
+        <p className="text-gray-600">Gerencie seu perfil e preferências da conta</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Perfil */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-card-foreground">
-                <User className="w-5 h-5" />
-                <span>Perfil do Usuário</span>
-              </CardTitle>
-              <CardDescription>
-                Atualize suas informações pessoais e dados para contratos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProfileUpdate} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome completo *</Label>
-                    <Input
-                      id="name"
-                      value={profile.name}
-                      onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      required
-                      className="bg-background border-border"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                      placeholder="seu@email.com"
-                      className="bg-background border-border"
-                      disabled
-                    />
-                  </div>
-                  
-                  <AvatarUpload
-                    value={profile.avatar_url || ''}
-                    onChange={(value) => setProfile({ ...profile, avatar_url: value })}
-                    label="Foto do Perfil"
-                    className="col-span-2"
-                  />
-                </div>
+      {/* Mobile Tabs */}
+      <div className="lg:hidden">
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-
-
-                <Button type="submit" disabled={isLoading} className="gradient-primary text-white">
-                  {isLoading ? 'Salvando...' : 'Salvar Perfil'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Configurações */}
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-card-foreground">
-                <SettingsIcon className="w-5 h-5" />
-                <span>Preferências</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center space-x-2 text-card-foreground">
-                  <Bell className="w-4 h-4" />
-                  <span>Notificações</span>
-                </h3>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="notifications">Ativar notificações</Label>
-                    <Switch
-                      id="notifications"
-                      checked={settings.notifications_enabled}
-                      onCheckedChange={(checked) => 
-                        setSettings({ ...settings, notifications_enabled: checked })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-card-foreground">Aparência e Idioma</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tema</Label>
-                    <Select
-                      value={settings.theme}
-                      onValueChange={(value: 'light' | 'dark' | 'system') => 
-                        setSettings({ ...settings, theme: value })
-                      }
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">Claro</SelectItem>
-                        <SelectItem value="dark">Escuro</SelectItem>
-                        <SelectItem value="system">Sistema</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Idioma</Label>
-                    <Select
-                      value={settings.language}
-                      onValueChange={(value) => setSettings({ ...settings, language: value })}
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                        <SelectItem value="en-US">English (US)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <Button onClick={handleSettingsUpdate} disabled={isLoading} className="gradient-primary text-white">
-                {isLoading ? 'Salvando...' : 'Salvar Configurações'}
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Desktop Sidebar */}
+        <div className="hidden lg:block">
+          <div className="space-y-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <tab.icon className="w-5 h-5" />
+                <span className="font-medium">{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Sidebar - Plano Atual */}
-        <div className="space-y-6">
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-card-foreground">
-                <Crown className="w-5 h-5" />
-                <span>Plano Atual</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {currentPlan && (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <Badge className={`${currentPlan.name === 'Gratuito' ? 'bg-secondary' : 'bg-default'} mb-2`}>
-                      {currentPlan.name}
-                    </Badge>
-                    <p className="text-2xl font-bold text-card-foreground">
-                      R$ {(currentPlan.price || 0).toFixed(2)}
-                      <span className="text-sm font-normal text-muted-foreground">/mês</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-2">{currentPlan.description}</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Contratos este mês:</span>
-                      <span className="text-sm font-bold">
-                        {contractCount} / ∞
-                      </span>
+        {/* Content Area */}
+        <div className="lg:col-span-3">
+          {/* Profile Tab */}
+          {(activeTab === 'profile' || window.innerWidth >= 1024) && (
+            <div className="space-y-6">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <User className="w-6 h-6 text-blue-600" />
+                    Perfil do Usuário
+                  </CardTitle>
+                  <CardDescription>
+                    Atualize suas informações pessoais e dados para contratos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleProfileUpdate} className="space-y-6">
+                    {/* Avatar Section */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="flex-shrink-0">
+                        <AvatarWithInitials
+                          src={profile.avatar_url}
+                          name={profile.name}
+                          size="lg"
+                          className="w-20 h-20"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <AvatarUpload
+                          value={profile.avatar_url || ''}
+                          onChange={(value) => setProfile({ ...profile, avatar_url: value })}
+                          label="Alterar foto"
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min((contractCount / 100) * 100, 100)}%` 
-                        }}
-                      />
+
+                    <Separator />
+
+                    {/* Form Fields */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="text-sm font-medium">
+                          Nome completo *
+                        </Label>
+                        <Input
+                          id="name"
+                          value={profile.name}
+                          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                          required
+                          className="h-11"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="text-sm font-medium">
+                          Email
+                        </Label>
+                        <Input
+                          id="email"
+                          value={profile.email}
+                          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                          type="email"
+                          className="h-11"
+                          disabled
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <Button 
+                        type="submit" 
+                        disabled={isLoading} 
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-11"
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 mr-2" />
+                            Salvar Perfil
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Preferences Tab */}
+          {(activeTab === 'preferences' || window.innerWidth >= 1024) && (
+            <div className="space-y-6">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <SettingsIcon className="w-6 h-6 text-blue-600" />
+                    Preferências
+                  </CardTitle>
+                  <CardDescription>
+                    Configure suas preferências de notificações e aparência
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Notifications */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Bell className="w-5 h-5 text-gray-600" />
+                      Notificações
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <Label htmlFor="notifications" className="text-sm font-medium">
+                            Ativar notificações
+                          </Label>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Receba alertas sobre novos contratos e atualizações
+                          </p>
+                        </div>
+                        <Switch
+                          id="notifications"
+                          checked={settings.notifications_enabled}
+                          onCheckedChange={(checked) => 
+                            setSettings({ ...settings, notifications_enabled: checked })
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-card-foreground">Recursos inclusos:</p>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      {Array.isArray(currentPlan.features) ? currentPlan.features.map((feature, index) => (
-                        <li key={index} className="flex items-start space-x-2">
-                          <span className="text-green-500 mt-0.5">✓</span>
-                          <span>{feature}</span>
-                        </li>
-                      )) : (
-                        <li className="flex items-start space-x-2">
-                          <span className="text-green-500 mt-0.5">✓</span>
-                          <span>{currentPlan.features || 'Recursos do plano'}</span>
-                        </li>
+
+                  <Separator />
+
+                  {/* Appearance */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Palette className="w-5 h-5 text-gray-600" />
+                      Aparência e Idioma
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Tema</Label>
+                        <Select
+                          value={settings.theme}
+                          onValueChange={(value: 'light' | 'dark' | 'system') => 
+                            setSettings({ ...settings, theme: value })
+                          }
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">Claro</SelectItem>
+                            <SelectItem value="dark">Escuro</SelectItem>
+                            <SelectItem value="system">Sistema</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Idioma</Label>
+                        <Select
+                          value={settings.language}
+                          onValueChange={(value) => setSettings({ ...settings, language: value })}
+                        >
+                          <SelectTrigger className="h-11">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
+                            <SelectItem value="en-US">English (US)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <Button 
+                      onClick={handleSettingsUpdate} 
+                      disabled={isLoading} 
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-11"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Salvando...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Salvar Configurações
+                        </>
                       )}
-                    </ul>
-                  </div>
-                  
-                  {currentPlan.name === 'Gratuito' && (
-                    <Button className="w-full gradient-primary text-white">
-                      Fazer Upgrade
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Subscription Tab */}
+          {(activeTab === 'subscription' || window.innerWidth >= 1024) && (
+            <div className="space-y-6">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Crown className="w-6 h-6 text-yellow-600" />
+                    Plano Atual
+                  </CardTitle>
+                  <CardDescription>
+                    Gerencie sua assinatura e recursos disponíveis
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {currentPlan && (
+                    <div className="space-y-6">
+                      {/* Plan Info */}
+                      <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                        <Badge className={`mb-3 ${
+                          currentPlan.name === 'Gratuito' 
+                            ? 'bg-gray-100 text-gray-700' 
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {currentPlan.name}
+                        </Badge>
+                        <p className="text-3xl font-bold text-gray-900">
+                          R$ {(currentPlan.price || 0).toFixed(2)}
+                          <span className="text-sm font-normal text-gray-500">/mês</span>
+                        </p>
+                        <p className="text-sm text-gray-600 mt-2">{currentPlan.description}</p>
+                      </div>
+                      
+                      {/* Usage */}
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-700">Contratos este mês:</span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {contractCount} / ∞
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${Math.min((contractCount / 100) * 100, 100)}%` 
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Features */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-green-600" />
+                          Recursos inclusos:
+                        </h4>
+                        <ul className="space-y-2">
+                          {Array.isArray(currentPlan.features) ? currentPlan.features.map((feature, index) => (
+                            <li key={index} className="flex items-start gap-3">
+                              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-gray-700">{feature}</span>
+                            </li>
+                          )) : (
+                            <li className="flex items-start gap-3">
+                              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-gray-700">{currentPlan.features || 'Recursos do plano'}</span>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                      
+                      {/* Upgrade Button */}
+                      {currentPlan.name === 'Gratuito' && (
+                        <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12">
+                          <Crown className="w-4 h-4 mr-2" />
+                          Fazer Upgrade
+                        </Button>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>

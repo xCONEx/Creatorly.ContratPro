@@ -11,49 +11,76 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
   
   // Usar o novo hook de sincronização automática
-  const { syncData, isSyncing, lastSync } = useAutoSync();
+  const { syncData } = useAutoSync();
 
   const handleManualSync = async () => {
     console.log('Sincronização manual iniciada');
+    setIsSyncing(true);
     try {
-      const result = await syncData();
-      console.log('Resultado da sincronização:', result);
+      await syncData();
+      setLastSync(new Date());
+      console.log('Sincronização manual concluída');
     } catch (error) {
       console.error('Erro na sincronização manual:', error);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      {/* Sidebar - Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
       <Sidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)} 
       />
       
-      <div className="flex-1 flex flex-col lg:ml-0">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
         <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
         
-        <main className="flex-1 overflow-auto p-6">
-          {children}
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            {children}
+          </div>
           
-          {/* Botão de sincronização manual */}
-          <div className="fixed bottom-4 right-4">
+          {/* Floating Action Buttons - Mobile Optimized */}
+          <div className="fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+            {/* Sync Button */}
             <Button 
               onClick={handleManualSync}
               disabled={isSyncing}
-              className="shadow-lg text-sm px-3 py-2"
+              className="shadow-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 h-12 w-12 p-0 rounded-full"
+              title="Sincronizar dados"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+              <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
             </Button>
+            
+            {/* Last Sync Indicator - Only show on larger screens */}
+            {lastSync && (
+              <div className="hidden sm:block bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg text-xs text-gray-600 border border-gray-200">
+                Última sincronização: {lastSync.toLocaleTimeString('pt-BR')}
+              </div>
+            )}
           </div>
           
-          {/* Indicador de última sincronização */}
+          {/* Mobile Sync Indicator */}
           {lastSync && (
-            <div className="fixed bottom-4 left-4 text-xs text-gray-500 bg-white px-2 py-1 rounded shadow">
-              Última sincronização: {lastSync.toLocaleTimeString('pt-BR')}
+            <div className="sm:hidden fixed bottom-4 left-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs text-gray-600 border border-gray-200 shadow">
+              {lastSync.toLocaleTimeString('pt-BR')}
             </div>
           )}
         </main>
