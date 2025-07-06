@@ -81,29 +81,43 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   const fetchProfile = async () => {
     if (!user) return;
     try {
+      console.log('Fetching profile for user:', user.id);
+      console.log('User metadata:', user.user_metadata);
+      
       const { data: profile, error } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
+      
+      console.log('Profile data from database:', profile);
+      console.log('Profile error:', error);
+      
       if (error || !profile) {
+        const fallbackAvatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+        console.log('Using fallback profile with avatar_url:', fallbackAvatarUrl);
+        
         setProfile({
           name: user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário',
           email: user.email || '',
           phone: '',
           company: '',
-          avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || '',
+          avatar_url: fallbackAvatarUrl,
           user_type: 'individual',
           subscription: 'free'
         });
         return;
       }
+      
+      const avatarUrl = (profile as any).avatar_url || '';
+      console.log('Setting profile with avatar_url from database:', avatarUrl);
+      
       setProfile({
         name: profile.name || '',
         email: profile.email || '',
         phone: profile.phone || '',
         company: profile.company || '',
-        avatar_url: (profile as any).avatar_url || '',
+        avatar_url: avatarUrl,
         user_type: (profile.user_type as 'individual' | 'company' | 'agency') || 'individual',
         subscription: (profile.subscription as 'free' | 'basic' | 'professional' | 'enterprise') || 'free'
       });
@@ -127,7 +141,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     
     try {
       const { error } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .upsert({
           id: user.id,
           name: profile.name,

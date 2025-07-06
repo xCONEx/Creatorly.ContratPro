@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Check if profile already exists
       const { data: existingProfile } = await supabase
-        .from('user_profiles')
+        .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('Tentando inserir perfil com dados:', profileData);
           
           const { error } = await supabase
-            .from('user_profiles')
+            .from('profiles')
             .insert(profileData);
 
           if (error) {
@@ -107,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log('Tentando fallback sem avatar:', fallbackData);
             
             const { error: fallbackError } = await supabase
-              .from('user_profiles')
+              .from('profiles')
               .insert(fallbackData);
 
             if (fallbackError) {
@@ -136,7 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('Atualizando avatar do perfil existente com foto do Google');
           
           const { error } = await supabase
-            .from('user_profiles')
+            .from('profiles')
             .update({ avatar_url: avatarUrl } as any)
             .eq('id', user.id);
 
