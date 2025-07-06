@@ -189,11 +189,98 @@ export const useSubscription = () => {
         
         return transformedData;
       } else {
-        console.log('No subscription found for user');
+        console.log('No subscription found for user, creating default subscription...');
+        
+        // Criar assinatura gratuita automaticamente
+        const defaultSubscription = await createDefaultSubscription();
+        if (defaultSubscription) {
+          return defaultSubscription;
+        }
+        
         return null;
       }
     } catch (error) {
       console.error('Error in fetchSubscription:', error);
+      return null;
+    }
+  };
+
+  const createDefaultSubscription = async (): Promise<UserSubscription | null> => {
+    if (!user) return null;
+
+    try {
+      console.log('Creating default subscription for user:', user.id);
+      
+      // Buscar o plano gratuito
+      const { data: freePlan, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('name', 'Gratuito')
+        .single();
+
+      if (planError || !freePlan) {
+        console.error('Error fetching free plan:', planError);
+        return null;
+      }
+
+      // Criar assinatura gratuita
+      const { data: newSubscription, error: subError } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          plan_id: freePlan.id,
+          status: 'active',
+          start_date: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select(`
+          *,
+          plan:subscription_plans(*)
+        `)
+        .single();
+
+      if (subError) {
+        console.error('Error creating default subscription:', subError);
+        return null;
+      }
+
+      console.log('Default subscription created:', newSubscription);
+      
+      const transformedData = {
+        ...newSubscription,
+        plan: {
+          ...newSubscription.plan,
+          features: Array.isArray(newSubscription.plan.features) ? newSubscription.plan.features : 
+                   typeof newSubscription.plan.features === 'string' ? 
+                     (() => {
+                       try {
+                         return JSON.parse(newSubscription.plan.features);
+                       } catch (e) {
+                         const featuresText = newSubscription.plan.features || '';
+                         const features = [];
+                         
+                         if (featuresText.includes('contrato') || featuresText.includes('Contrato')) features.push('contracts');
+                         if (featuresText.includes('template') || featuresText.includes('Template')) features.push('templates');
+                         if (featuresText.includes('API') || featuresText.includes('api')) features.push('api');
+                         if (featuresText.includes('relatório') || featuresText.includes('Relatório')) features.push('reports');
+                         if (featuresText.includes('assinatura') || featuresText.includes('Assinatura')) features.push('signature');
+                         if (featuresText.includes('notificação') || featuresText.includes('Notificação')) features.push('notifications');
+                         if (featuresText.includes('backup') || featuresText.includes('Backup')) features.push('backup');
+                         if (featuresText.includes('integração') || featuresText.includes('Integração')) features.push('integrations');
+                         if (featuresText.includes('analytics') || featuresText.includes('Analytics')) features.push('analytics');
+                         if (featuresText.includes('suporte') || featuresText.includes('Suporte')) features.push('support');
+                         
+                         console.warn('Failed to parse plan features JSON, extracted features from text:', featuresText, '->', features);
+                         return features;
+                       }
+                     })() : []
+        }
+      };
+      
+      return transformedData;
+    } catch (error) {
+      console.error('Error creating default subscription:', error);
       return null;
     }
   };
