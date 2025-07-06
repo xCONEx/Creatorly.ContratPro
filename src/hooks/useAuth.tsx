@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useCache } from './useCache';
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const { clearCache } = useCache();
 
   useEffect(() => {
     // Get initial session
@@ -159,7 +161,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Limpa qualquer cache local antes do logout
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+      
+      // Limpa o cache da aplicação
+      clearCache();
+      
+      // Faz o logout no Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Erro durante logout:', error);
+        throw error;
+      }
+      
+      // Limpa estados locais
+      setUser(null);
+      setSession(null);
+      
+      console.log('Logout realizado com sucesso');
+    } catch (error) {
+      console.error('Erro durante logout:', error);
+      throw error;
+    }
   };
 
   const syncWithFinanceFlow = async () => {
