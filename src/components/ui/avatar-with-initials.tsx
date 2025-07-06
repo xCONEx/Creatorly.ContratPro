@@ -31,6 +31,17 @@ export const AvatarWithInitials: React.FC<AvatarWithInitialsProps> = ({
   className = '',
   fallbackIcon
 }) => {
+  // Debug logs
+  React.useEffect(() => {
+    console.log('AvatarWithInitials Debug:', {
+      src,
+      name,
+      size,
+      hasSrc: !!src,
+      srcType: src ? (src.startsWith('data:') ? 'base64' : 'url') : 'none'
+    });
+  }, [src, name, size]);
+
   const getInitials = (name: string) => {
     if (!name) return '';
     
@@ -69,9 +80,29 @@ export const AvatarWithInitials: React.FC<AvatarWithInitialsProps> = ({
   const initials = getInitials(name);
   const bgColor = getRandomColor(name);
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    console.error('Erro ao carregar imagem do avatar:', {
+      src,
+      error: e,
+      name
+    });
+  };
+
+  const handleImageLoad = () => {
+    console.log('Imagem do avatar carregada com sucesso:', {
+      src,
+      name
+    });
+  };
+
   return (
     <Avatar className={`${sizeClasses[size]} ${className}`}>
-      <AvatarImage src={src} alt={`Avatar de ${name}`} />
+      <AvatarImage 
+        src={src} 
+        alt={`Avatar de ${name}`}
+        onError={handleImageError}
+        onLoad={handleImageLoad}
+      />
       <AvatarFallback className={`${bgColor} text-white`}>
         {fallbackIcon || (initials || <User className={fallbackSizeClasses[size]} />)}
       </AvatarFallback>
