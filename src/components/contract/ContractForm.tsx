@@ -9,6 +9,7 @@ import ContractBasicInfo from './ContractBasicInfo';
 import ContractContent from './ContractContent';
 import ContractActions from './ContractActions';
 import ContractTips from './ContractTips';
+import ContractUserInfo from './ContractUserInfo';
 
 interface Client {
   id: string;
@@ -31,9 +32,20 @@ const ContractForm = () => {
     status: 'draft' as const
   });
 
+  const [userData, setUserData] = useState({
+    user_name: '',
+    user_email: '',
+    user_cnpj: '',
+    user_address: '',
+    user_phone: ''
+  });
+
+  const [isUserDataLoaded, setIsUserDataLoaded] = useState(false);
+
   useEffect(() => {
     if (user) {
       fetchClients();
+      fetchUserData();
     }
   }, [user]);
 
@@ -59,6 +71,40 @@ const ContractForm = () => {
     }
   };
 
+  const fetchUserData = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('name, email, company, address, phone')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      
+      setUserData({
+        user_name: data?.name || user.email?.split('@')[0] || 'Usuário',
+        user_email: data?.email || user.email || '',
+        user_cnpj: data?.company || '',
+        user_address: data?.address || '',
+        user_phone: data?.phone || ''
+      });
+      setIsUserDataLoaded(true);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      // Usar dados padrão se não conseguir buscar
+      setUserData({
+        user_name: user.email?.split('@')[0] || 'Usuário',
+        user_email: user.email || '',
+        user_cnpj: '',
+        user_address: '',
+        user_phone: ''
+      });
+      setIsUserDataLoaded(true);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -67,6 +113,8 @@ const ContractForm = () => {
   const handleClientChange = (value: string) => {
     setFormData(prev => ({ ...prev, client_id: value }));
   };
+
+  // Removido handleUserDataChange - agora sempre busca do perfil
 
   const handleSubmit = async (e: React.FormEvent, action: 'save' | 'send') => {
     e.preventDefault();
@@ -81,6 +129,7 @@ const ContractForm = () => {
     setIsLoading(true);
     
     try {
+
       const contractData = {
         user_id: user.id,
         title: formData.title,
@@ -88,9 +137,15 @@ const ContractForm = () => {
         client_id: formData.client_id,
         total_value: formData.total_value ? parseFloat(formData.total_value) : null,
         due_date: formData.due_date || null,
-        status: action === 'send' ? 'sent' as const : 'draft' as const,
+        status: action === 'send' ? 'enviado' as const : 'rascunho' as const,
         sent_at: action === 'send' ? new Date().toISOString() : null,
         expires_at: action === 'send' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null, // 30 dias
+        // Dados do usuário
+        user_name: userData.user_name,
+        user_email: userData.user_email,
+        user_cnpj: userData.user_cnpj,
+        user_address: userData.user_address,
+        user_phone: userData.user_phone,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -134,6 +189,12 @@ const ContractForm = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          <ContractUserInfo
+            userData={userData}
+            onUserDataChange={() => {}} // Não editável - sempre busca do perfil
+            isEditable={false}
+            isLoading={!isUserDataLoaded}
+          />
           <ContractBasicInfo
             formData={formData}
             clients={clients}

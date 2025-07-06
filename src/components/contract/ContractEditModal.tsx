@@ -101,6 +101,28 @@ const ContractEditModal = ({ contract, isOpen, onClose, onUpdate }: ContractEdit
     setIsLoading(true);
 
     try {
+      // Buscar dados do usuário
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('name, email, company, address, phone')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+      }
+
+      // Buscar dados atualizados do usuário
+      const { data: currentUserProfile, error: currentProfileError } = await supabase
+        .from('profiles')
+        .select('name, email, company, address, phone')
+        .eq('id', user.id)
+        .single();
+
+      if (currentProfileError) {
+        console.error('Error fetching current user profile:', currentProfileError);
+      }
+
       const { error } = await supabase
         .from('contracts')
         .update({
@@ -109,6 +131,12 @@ const ContractEditModal = ({ contract, isOpen, onClose, onUpdate }: ContractEdit
           client_id: formData.client_id,
           total_value: formData.total_value ? parseFloat(formData.total_value) : null,
           due_date: formData.due_date || null,
+          // Dados do usuário atualizados
+          user_name: currentUserProfile?.name || user.email?.split('@')[0] || 'Usuário',
+          user_email: currentUserProfile?.email || user.email,
+          user_cnpj: currentUserProfile?.company || '',
+          user_address: currentUserProfile?.address || '',
+          user_phone: currentUserProfile?.phone || '',
           updated_at: new Date().toISOString()
         })
         .eq('id', contract.id)
@@ -215,7 +243,6 @@ const ContractEditModal = ({ contract, isOpen, onClose, onUpdate }: ContractEdit
           <div className="flex justify-end space-x-2 pt-4">
             <Button
               type="button"
-              variant="outline"
               onClick={onClose}
               disabled={isLoading}
             >
