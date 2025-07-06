@@ -4,6 +4,9 @@ export interface ContractData {
   content: string;
   client_name: string;
   client_email?: string;
+  client_cnpj?: string;
+  client_address?: string;
+  client_phone?: string;
   total_value?: number;
   due_date?: string;
   created_at: string;
@@ -111,13 +114,13 @@ QUALIFICAÇÃO DAS PARTES
 CONTRATANTE:
 ${contract.client_name}
 ${contract.client_email ? `E-mail: ${contract.client_email}` : 'E-mail: [________________@_______.com]'}
-CPF/CNPJ: [___.___.___-__ / __.___.___.____/____-__]
-Endereço: [Rua/Av., nº ___, Bairro]
-Telefone: [(__) _____-____]
+CNPJ/CPF: ${contract.client_cnpj || '[___.___.___-__ / __.___.___.____/____-__]'}
+Endereço: ${contract.client_address || '[Rua/Av., nº ___, Bairro]'}
+Telefone: ${contract.client_phone || '[(__) _____-____]'}
 
 CONTRATADO:
 ${contract.user_name || '[Nome da empresa/pessoa física]'}
-CNPJ/CPF: ${contract.user_cnpj || '[___.___.___-__ / __.___.___.____/____-__]'}
+CNPJ: ${contract.user_cnpj || '[___.___.___-__ / __.___.___.____/____-__]'}
 Endereço: ${contract.user_address || '[Rua/Av., nº ___, Bairro]'}
 Cidade: [________], [Estado], CEP: [_____-___]
 Telefone: ${contract.user_phone || '[(__) _____-____]'}
