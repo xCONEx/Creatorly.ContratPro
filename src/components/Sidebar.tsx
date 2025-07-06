@@ -77,27 +77,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             </Link>
           ))}
         </nav>
-
-        {/* Footer - User Info */}
-        {user && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200 bg-gray-50">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">
-                  {user.email?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user.user_metadata?.name || user.user_metadata?.full_name || 'Usuário'}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {user.email}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
