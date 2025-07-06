@@ -1,11 +1,15 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useSubscription } from './useSubscription';
+import { useClients } from './useClients';
+import { useContracts } from './useContracts';
 import { toast } from './use-toast';
 
 export const useAutoSync = () => {
   const { user, session } = useAuth();
   const { subscription, refetch } = useSubscription();
+  const { fetchClients } = useClients();
+  const { fetchContracts } = useContracts();
   const hasSynced = useRef(false);
   const isSyncing = useRef(false);
 
@@ -41,13 +45,33 @@ export const useAutoSync = () => {
         const result = await response.json();
         console.log('✅ Sincronização automática concluída:', result);
         
-        // Atualizar dados da assinatura após sincronização
-        await refetch();
+        // Atualizar todos os dados após sincronização
+        console.log('🔄 Atualizando dados do frontend...');
         
-        if (result.sync_status === 'updated') {
+        try {
+          // Atualizar dados da assinatura
+          await refetch();
+          
+          // Atualizar dados dos clientes
+          await fetchClients(true);
+          
+          // Atualizar dados dos contratos
+          await fetchContracts(true);
+          
+          console.log('✅ Dados do frontend atualizados com sucesso');
+          
+          if (result.sync_status === 'updated') {
+            toast({
+              title: "Sincronização concluída",
+              description: "Seus dados foram sincronizados com o FinanceFlow e atualizados na interface.",
+            });
+          }
+        } catch (error) {
+          console.error('❌ Erro ao atualizar dados do frontend:', error);
           toast({
-            title: "Sincronização concluída",
-            description: "Seus dados foram sincronizados com o FinanceFlow.",
+            title: "Sincronização parcial",
+            description: "Dados sincronizados, mas houve erro ao atualizar a interface.",
+            variant: "destructive",
           });
         }
       } else {
@@ -61,7 +85,7 @@ export const useAutoSync = () => {
       hasSynced.current = true;
       isSyncing.current = false;
     }
-  }, [user, refetch]);
+  }, [user, refetch, fetchClients, fetchContracts]);
 
   // Executar sincronização apenas quando o usuário estiver autenticado e não tiver sincronizado ainda
   useEffect(() => {
