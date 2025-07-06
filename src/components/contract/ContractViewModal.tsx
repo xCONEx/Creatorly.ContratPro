@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +22,10 @@ interface Contract {
   clients?: {
     name: string;
     email?: string;
+    cpf_cnpj?: string;
+    cnpj?: string;
+    address?: string;
+    phone?: string;
   };
 }
 
@@ -69,7 +72,8 @@ const ContractViewModal = ({ contract, isOpen, onClose }: ContractViewModalProps
                 {getStatusBadge(contract.status)}
                 <Button
                   onClick={() => setShowDownloadModal(true)}
-                  className="ml-2 border border-gray-300 bg-white hover:bg-gray-50 px-3 py-1 text-sm"
+                  variant="default"
+                  className="ml-2 px-3 py-1 text-sm"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download
@@ -89,13 +93,34 @@ const ContractViewModal = ({ contract, isOpen, onClose }: ContractViewModalProps
                   <div className="flex items-center space-x-2">
                     <User className="w-4 h-4 text-slate-600" />
                     <span className="text-sm">
-                      <strong>Cliente:</strong> {contract.clients?.name || 'Não informado'}
+                      <strong>Cliente:</strong> {contract.clients?.name || ''}
                     </span>
                   </div>
                   {contract.clients?.email && (
                     <div className="flex items-center space-x-2">
                       <span className="text-sm">
                         <strong>Email:</strong> {contract.clients.email}
+                      </span>
+                    </div>
+                  )}
+                  {(contract.clients?.cpf_cnpj || contract.clients?.cnpj) && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">
+                        <strong>CPF/CNPJ:</strong> {contract.clients?.cpf_cnpj || contract.clients?.cnpj || ''}
+                      </span>
+                    </div>
+                  )}
+                  {contract.clients?.address && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">
+                        <strong>Endereço:</strong> {contract.clients.address}
+                      </span>
+                    </div>
+                  )}
+                  {contract.clients?.phone && (
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">
+                        <strong>Telefone:</strong> {contract.clients.phone}
                       </span>
                     </div>
                   )}
