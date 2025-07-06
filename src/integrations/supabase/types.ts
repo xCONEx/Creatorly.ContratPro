@@ -207,51 +207,84 @@ export type Database = {
           client_id: string
           contract_file_name: string | null
           contract_file_url: string | null
+          content: string | null
           created_at: string
           description: string | null
+          due_date: string | null
           end_date: string | null
+          expires_at: string | null
           id: string
+          sent_at: string | null
+          signature_token: string | null
+          signed_at: string | null
           start_date: string | null
-          status: Database["public"]["Enums"]["contract_status"] | null
+          status: string | null
           template_used: string | null
           title: string
           total_value: number | null
           updated_at: string
+          user_address: string | null
+          user_cnpj: string | null
+          user_email: string | null
           user_id: string
+          user_name: string | null
+          user_phone: string | null
           value: number | null
         }
         Insert: {
           client_id: string
           contract_file_name?: string | null
           contract_file_url?: string | null
+          content?: string | null
           created_at?: string
           description?: string | null
+          due_date?: string | null
           end_date?: string | null
+          expires_at?: string | null
           id?: string
+          sent_at?: string | null
+          signature_token?: string | null
+          signed_at?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["contract_status"] | null
+          status?: string | null
           template_used?: string | null
           title: string
           total_value?: number | null
           updated_at?: string
+          user_address?: string | null
+          user_cnpj?: string | null
+          user_email?: string | null
           user_id: string
+          user_name?: string | null
+          user_phone?: string | null
           value?: number | null
         }
         Update: {
           client_id?: string
           contract_file_name?: string | null
           contract_file_url?: string | null
+          content?: string | null
           created_at?: string
           description?: string | null
+          due_date?: string | null
           end_date?: string | null
+          expires_at?: string | null
           id?: string
+          sent_at?: string | null
+          signature_token?: string | null
+          signed_at?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["contract_status"] | null
+          status?: string | null
           template_used?: string | null
           title?: string
           total_value?: number | null
           updated_at?: string
+          user_address?: string | null
+          user_cnpj?: string | null
+          user_email?: string | null
           user_id?: string
+          user_name?: string | null
+          user_phone?: string | null
           value?: number | null
         }
         Relationships: [
@@ -263,6 +296,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contracts_counter: {
+        Row: {
+          count: number
+          id: string
+          month: number
+          updated_at: string | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          count?: number
+          id?: string
+          month: number
+          updated_at?: string | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          count?: number
+          id?: string
+          month?: number
+          updated_at?: string | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
