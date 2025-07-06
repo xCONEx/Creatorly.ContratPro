@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tables } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface UserProfile {
   name: string;
@@ -31,6 +32,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const { user, signOut } = useAuth();
+  const { subscription, plans } = useSubscription();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -146,6 +148,11 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     await signOut();
   };
 
+  const getCurrentPlan = () => {
+    return subscription?.plan || plans.find(p => p.name === 'Gratuito');
+  };
+  const currentPlan = getCurrentPlan();
+
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm sticky top-0 z-30">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -179,7 +186,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                   {profile.name}
                 </span>
                 <span className="text-xs text-blue-600 font-medium capitalize">
-                  {profile.subscription}
+                  {currentPlan ? currentPlan.name : 'Gratuito'}
                 </span>
               </div>
               <ChevronDown className="w-4 h-4 text-gray-400 ml-1" />
