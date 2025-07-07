@@ -90,6 +90,7 @@ export const useAutoSync = () => {
   // Executar sincronização apenas quando o usuário estiver autenticado e não tiver sincronizado ainda
   useEffect(() => {
     if (user && session && !hasSynced.current) {
+      hasSynced.current = true; // Marcar como sincronizado ANTES de chamar syncData
       // Pequeno delay para garantir que outros hooks estejam prontos
       const timer = setTimeout(() => {
         syncData();
@@ -97,7 +98,7 @@ export const useAutoSync = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [user, session, syncData]);
+  }, [user, session]); // Remover syncData das dependências
 
   return { syncData };
 }; 
