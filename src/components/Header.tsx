@@ -32,7 +32,7 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const { user, signOut } = useAuth();
-  const { subscription, plans } = useSubscription();
+  const { subscription, plans, loading } = useSubscription();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -225,6 +225,14 @@ export default function Header({ onMenuToggle }: HeaderProps) {
     return subscription?.plan || plans.find(p => p.name === 'Gratuito');
   };
   const currentPlan = getCurrentPlan();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-24">
+        <div className="w-6 h-6 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 py-3 shadow-sm sticky top-0 z-30">
