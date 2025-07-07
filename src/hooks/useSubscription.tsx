@@ -34,6 +34,7 @@ interface SubscriptionContextType {
   plans: SubscriptionPlan[];
   loading: boolean;
   contractCount: number;
+  error: string | null;
   checkPlanLimit: (feature: 'contracts' | 'api') => Promise<boolean>;
   hasFeatureAccess: (feature: string) => boolean;
   getContractLimitText: () => string;
@@ -48,23 +49,31 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [contractCount, setContractCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   const initializeUserData = async () => {
+    setError(null);
     if (!user) {
       setLoading(false);
       return;
     }
     try {
+      console.log('[SubscriptionProvider] Iniciando fetch de planos, assinatura e contratos...');
       const [plansResult, subscriptionResult, contractCountResult] = await Promise.allSettled([
         fetchPlans(),
         fetchSubscription(),
         fetchContractCount()
       ]);
       if (plansResult.status === 'fulfilled') setPlans(plansResult.value);
+      else setError('Erro ao buscar planos de assinatura.');
       if (subscriptionResult.status === 'fulfilled') setSubscription(subscriptionResult.value);
+      else setError('Erro ao buscar assinatura do usuário.');
       if (contractCountResult.status === 'fulfilled') setContractCount(contractCountResult.value);
-    } catch (error) {
-      console.error('Error during data initialization:', error);
+      else setError('Erro ao buscar contagem de contratos.');
+      console.log('[SubscriptionProvider] Fetch concluído.');
+    } catch (err: any) {
+      console.error('[SubscriptionProvider] Erro geral:', err);
+      setError('Erro inesperado ao carregar dados de assinatura.');
     } finally {
       setLoading(false);
     }
@@ -310,6 +319,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       plans,
       loading,
       contractCount,
+      error,
       checkPlanLimit,
       hasFeatureAccess,
       getContractLimitText,
