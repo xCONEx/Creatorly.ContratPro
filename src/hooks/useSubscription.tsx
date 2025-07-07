@@ -36,8 +36,8 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState(true);
   const [contractCount, setContractCount] = useState(0);
 
-  // Memoizar a função de inicialização para evitar re-renders desnecessários
-  const initializeUserData = useCallback(async () => {
+  // Remover useCallback e definir como função normal
+  const initializeUserData = async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -45,38 +45,35 @@ export const useSubscription = () => {
 
     try {
       console.log('Starting data initialization for user:', user.id);
-      
       // Executar todas as chamadas em paralelo para melhor performance
       const [plansResult, subscriptionResult, contractCountResult] = await Promise.allSettled([
         fetchPlans(),
         fetchSubscription(),
         fetchContractCount()
       ]);
-
       // Processar resultados
       if (plansResult.status === 'fulfilled') {
         setPlans(plansResult.value);
       }
-
       if (subscriptionResult.status === 'fulfilled') {
         setSubscription(subscriptionResult.value);
       }
-
       if (contractCountResult.status === 'fulfilled') {
         setContractCount(contractCountResult.value);
       }
-
       console.log('Data initialization completed successfully');
     } catch (error) {
       console.error('Error during data initialization:', error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  };
 
   useEffect(() => {
-    initializeUserData();
-  }, [initializeUserData]);
+    if (user) {
+      initializeUserData();
+    }
+  }, [user]);
 
   const fetchPlans = async (): Promise<SubscriptionPlan[]> => {
     try {
