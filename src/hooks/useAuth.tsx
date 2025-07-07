@@ -28,6 +28,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch((error) => {
+      // Se falhar ao restaurar sessão, faz logout preventivo
+      console.error('Erro ao restaurar sessão inicial:', error);
+      setSession(null);
+      setUser(null);
+      setLoading(false);
     });
 
     // Listen for auth changes
@@ -41,6 +47,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (event === 'SIGNED_IN' && session?.user) {
         await createUserProfile(session.user);
+      }
+      // Se evento for SIGNED_OUT, limpa tudo
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
       }
     });
 
