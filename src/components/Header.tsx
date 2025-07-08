@@ -85,9 +85,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
       console.log('User metadata:', user.user_metadata);
       
       const { data: profile, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
       
       console.log('Profile data from database:', profile);
