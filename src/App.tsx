@@ -51,22 +51,25 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Landing />} />
-                <Route path="/landing" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/contracts" element={<ProtectedRoute><Contracts /></ProtectedRoute>} />
-                <Route path="/contracts/new" element={<ProtectedRoute><NewContract /></ProtectedRoute>} />
-                <Route path="/new-contract" element={<ProtectedRoute><NewContract /></ProtectedRoute>} />
-                <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-                <Route path="/features" element={<ProtectedRoute><Features /></ProtectedRoute>} />
-                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="*" element={<NotFound />} />
+              {/* Rotas públicas sem Layout */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              {/* Rotas protegidas com Layout */}
+              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/contracts" element={<Contracts />} />
+                <Route path="/contracts/new" element={<NewContract />} />
+                <Route path="/new-contract" element={<NewContract />} />
+                <Route path="/clients" element={<Clients />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
+              {/* NotFound sem Layout */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
