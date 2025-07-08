@@ -135,7 +135,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
-        .order('price');
+        .order('price_monthly');
       if (error) {
         console.error('[SubscriptionProvider] Erro ao buscar planos:', error);
         throw error;
