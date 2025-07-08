@@ -118,12 +118,11 @@ const Settings = () => {
 
   const fetchProfile = async () => {
     if (!user) return;
-
     try {
       const { data: profile, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
       if (profile) {
         setProfile({
@@ -581,7 +580,7 @@ const Settings = () => {
                           {currentPlan.name}
                         </Badge>
                         <p className="text-3xl font-bold text-gray-900">
-                          R$ {(currentPlan.price || 0).toFixed(2)}
+                          R$ {(currentPlan.price_monthly || 0).toFixed(2)}
                           <span className="text-sm font-normal text-gray-500">/mês</span>
                         </p>
                         <p className="text-sm text-gray-600 mt-2">{currentPlan.description}</p>
