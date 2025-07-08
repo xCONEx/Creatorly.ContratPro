@@ -87,11 +87,15 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchPlans = async (): Promise<SubscriptionPlan[]> => {
     try {
+      console.log('[SubscriptionProvider] Buscando planos de assinatura...');
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
         .order('price');
-      if (error) throw error;
+      if (error) {
+        console.error('[SubscriptionProvider] Erro ao buscar planos:', error);
+        throw error;
+      }
       const transformedPlans = (data || []).map(plan => ({
         ...plan,
         features: Array.isArray(plan.features) ? plan.features : 
@@ -113,23 +117,29 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
             }
           })() : []
       }));
+      console.log('[SubscriptionProvider] Planos buscados com sucesso:', transformedPlans.length);
       return transformedPlans;
     } catch (error) {
-      console.error('Error in fetchPlans:', error);
-      return [];
+      console.error('[SubscriptionProvider] Erro em fetchPlans:', error);
+      throw error;
     }
   };
 
   const fetchSubscription = async (): Promise<UserSubscription | null> => {
     if (!user) return null;
     try {
+      console.log('[SubscriptionProvider] Buscando assinatura do usuário...');
       const { data, error } = await supabase
         .from('user_subscriptions')
         .select(`*, plan:subscription_plans(*)`)
         .eq('user_id', user.id)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        console.error('[SubscriptionProvider] Erro ao buscar assinatura:', error);
+        throw error;
+      }
       if (data && data.plan) {
+        console.log('[SubscriptionProvider] Assinatura encontrada:', data);
         return {
           ...data,
           plan: {
@@ -155,26 +165,35 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
           }
         };
       } else {
+        console.log('[SubscriptionProvider] Nenhuma assinatura encontrada, criando assinatura gratuita...');
         // Criar assinatura gratuita automaticamente
         const defaultSubscription = await createDefaultSubscription();
-        if (defaultSubscription) return defaultSubscription;
+        if (defaultSubscription) {
+          console.log('[SubscriptionProvider] Assinatura gratuita criada:', defaultSubscription);
+          return defaultSubscription;
+        }
         return null;
       }
     } catch (error) {
-      console.error('Error in fetchSubscription:', error);
-      return null;
+      console.error('[SubscriptionProvider] Erro em fetchSubscription:', error);
+      throw error;
     }
   };
 
   const createDefaultSubscription = async (): Promise<UserSubscription | null> => {
     if (!user) return null;
     try {
+      console.log('[SubscriptionProvider] Buscando plano gratuito...');
       const { data: freePlan, error: planError } = await supabase
         .from('subscription_plans')
         .select('*')
         .eq('name', 'Gratuito')
         .single();
-      if (planError || !freePlan) return null;
+      if (planError || !freePlan) {
+        console.error('[SubscriptionProvider] Erro ao buscar plano gratuito:', planError);
+        return null;
+      }
+      console.log('[SubscriptionProvider] Criando assinatura gratuita...');
       const { data: newSubscription, error: subError } = await supabase
         .from('user_subscriptions')
         .upsert({
@@ -186,7 +205,11 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' })
         .select(`*, plan:subscription_plans(*)`).single();
-      if (subError) return null;
+      if (subError) {
+        console.error('[SubscriptionProvider] Erro ao criar assinatura gratuita:', subError);
+        return null;
+      }
+      console.log('[SubscriptionProvider] Assinatura gratuita criada com sucesso:', newSubscription);
       return {
         ...newSubscription,
         plan: {
@@ -212,6 +235,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         }
       };
     } catch (error) {
+      console.error('[SubscriptionProvider] Erro em createDefaultSubscription:', error);
       return null;
     }
   };
@@ -219,6 +243,7 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
   const fetchContractCount = async (): Promise<number> => {
     if (!user) return 0;
     try {
+      console.log('[SubscriptionProvider] Buscando contagem de contratos...');
       const now = new Date();
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
@@ -229,17 +254,28 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
         .eq('year', year)
         .eq('month', month)
         .maybeSingle();
-      if (error) {}
-      if (data && typeof data.count === 'number') return data.count;
+      if (error) {
+        console.error('[SubscriptionProvider] Erro ao buscar contracts_counter:', error);
+      }
+      if (data && typeof data.count === 'number') {
+        console.log('[SubscriptionProvider] Contagem de contratos encontrada:', data.count);
+        return data.count;
+      }
+      // fallback: contar contratos criados no mês
       const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
       const { data: contracts, error: contractsError } = await supabase
         .from('contracts')
         .select('id')
         .eq('user_id', user.id)
         .gte('created_at', startOfMonth.toISOString());
-      if (contractsError) return 0;
+      if (contractsError) {
+        console.error('[SubscriptionProvider] Erro ao buscar contratos:', contractsError);
+        return 0;
+      }
+      console.log('[SubscriptionProvider] Contagem de contratos (fallback):', contracts?.length || 0);
       return contracts?.length || 0;
     } catch (error) {
+      console.error('[SubscriptionProvider] Erro em fetchContractCount:', error);
       return 0;
     }
   };
