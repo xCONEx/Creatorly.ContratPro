@@ -57,24 +57,68 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return;
     }
+    let timeoutId: NodeJS.Timeout | null = null;
+    let finished = false;
     try {
       console.log('[SubscriptionProvider] Iniciando fetch de planos, assinatura e contratos...');
-      const [plansResult, subscriptionResult, contractCountResult] = await Promise.allSettled([
-        fetchPlans(),
-        fetchSubscription(),
-        fetchContractCount()
+      // Timeout defensivo
+      timeoutId = setTimeout(() => {
+        if (!finished) {
+          setError('Timeout: O carregamento demorou demais. Verifique sua conexão ou tente novamente.');
+          setLoading(false);
+          console.error('[SubscriptionProvider] Timeout defensivo disparado!');
+        }
+      }, 10000); // 10 segundos
+
+      console.log('[SubscriptionProvider] Buscando planos de assinatura...');
+      const plansPromise = fetchPlans().then((res) => {
+        console.log('[SubscriptionProvider] Planos buscados:', res.length);
+        return res;
+      }).catch((err) => {
+        console.error('[SubscriptionProvider] Erro ao buscar planos:', err);
+        setError('Erro ao buscar planos de assinatura.');
+        return [];
+      });
+
+      console.log('[SubscriptionProvider] Buscando assinatura do usuário...');
+      const subscriptionPromise = fetchSubscription().then((res) => {
+        console.log('[SubscriptionProvider] Assinatura buscada:', res);
+        return res;
+      }).catch((err) => {
+        console.error('[SubscriptionProvider] Erro ao buscar assinatura:', err);
+        setError('Erro ao buscar assinatura do usuário.');
+        return null;
+      });
+
+      console.log('[SubscriptionProvider] Buscando contagem de contratos...');
+      const contractCountPromise = fetchContractCount().then((res) => {
+        console.log('[SubscriptionProvider] Contagem de contratos buscada:', res);
+        return res;
+      }).catch((err) => {
+        console.error('[SubscriptionProvider] Erro ao buscar contagem de contratos:', err);
+        setError('Erro ao buscar contagem de contratos.');
+        return 0;
+      });
+
+      const [plansResult, subscriptionResult, contractCountResult] = await Promise.all([
+        plansPromise,
+        subscriptionPromise,
+        contractCountPromise
       ]);
-      if (plansResult.status === 'fulfilled') setPlans(plansResult.value);
-      else setError('Erro ao buscar planos de assinatura.');
-      if (subscriptionResult.status === 'fulfilled') setSubscription(subscriptionResult.value);
-      else setError('Erro ao buscar assinatura do usuário.');
-      if (contractCountResult.status === 'fulfilled') setContractCount(contractCountResult.value);
-      else setError('Erro ao buscar contagem de contratos.');
+      setPlans(plansResult);
+      setSubscription(subscriptionResult);
+      setContractCount(contractCountResult);
+      finished = true;
+      if (timeoutId) clearTimeout(timeoutId);
       console.log('[SubscriptionProvider] Fetch concluído.');
     } catch (err: any) {
+      finished = true;
+      if (timeoutId) clearTimeout(timeoutId);
       console.error('[SubscriptionProvider] Erro geral:', err);
       setError('Erro inesperado ao carregar dados de assinatura.');
     } finally {
+      finished = true;
+      if (timeoutId) clearTimeout(timeoutId);
       setLoading(false);
     }
   };
@@ -361,6 +405,12 @@ export const SubscriptionProvider = ({ children }: { children: ReactNode }) => {
       getContractLimitText,
       refetch
     }}>
+      {/* Exibir erro na tela se houver erro global */}
+      {error && (
+        <div style={{background:'#fee',color:'#900',padding:16,border:'1px solid #f99',margin:16,borderRadius:8,zIndex:9999}}>
+          <b>Erro ao carregar dados de assinatura:</b> {error}
+        </div>
+      )}
       {children}
     </SubscriptionContext.Provider>
   );
