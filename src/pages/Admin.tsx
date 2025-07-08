@@ -115,7 +115,7 @@ const Admin = () => {
           subscription_plans (
             id,
             name,
-            price
+            price_monthly
           )
         `);
 
@@ -140,7 +140,7 @@ const Admin = () => {
             plan: {
               id: userSub.subscription_plans?.id || 0,
               name: userSub.subscription_plans?.name || '',
-              price: userSub.subscription_plans?.price || 0
+              price: userSub.subscription_plans?.price_monthly || 0
             }
           } : undefined
         };
