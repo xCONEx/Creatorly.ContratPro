@@ -40,9 +40,9 @@ const Features = () => {
               </p>
             </div>
             <div className="text-right">
-              {subscription?.plan.price && (
+              {subscription?.plan.price_monthly && (
                 <div className="text-2xl font-bold text-green-600">
-                  R$ {subscription.plan.price}/mês
+                  R$ {subscription.plan.price_monthly}/mês
                 </div>
               )}
             </div>
